@@ -18,12 +18,24 @@
 
 #include <stdint.h>
 
-#if !defined(__SOFT_FP__) && defined(__ARM_FP)
-  #warning "FPU is not initialized, but the project is compiling for an FPU. Please initialize the FPU before use."
-#endif
+#define RCC_BASE_ADDRESS
+#define RCC_AHB1ENR_OFFSET
+#define RCC_AHB1ENR
+
+unsigned int ragisterAHB1enb;
+unsigned int day;
+
 
 int main(void)
 {
+	registerAHB1enb = (unsigned int *)RCC_AHB1ENR;
+
+
+
+
+	*registerAHB1enb |= (1<<2);
     /* Loop forever */
-	for(;;);
+	while(1){
+		day++;
+	}
 }
