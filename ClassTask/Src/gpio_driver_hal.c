@@ -253,6 +253,9 @@ uint32_t gpio_ReadPin(GPIO_Handler_t * pPinHandler){
 	return pinValue;
 }
 
+void gpio_TooglePin(GPIO_Handler_t *pPinHandler){
+
+}
 
 
 
