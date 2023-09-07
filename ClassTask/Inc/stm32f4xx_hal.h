@@ -4,6 +4,7 @@
  *  Created on: Sep 6, 2023
  *
  *
+ *
  *      Author: imjeviz
  *
  *	Este archivo contiene la informacion mas básica del micro:
@@ -48,7 +49,7 @@
 /*
  * NOTA: Ahora agregamos la direccion de  memoria base para cada uno de los perifericos que possé el micro
  * En el "datasheet" del micro, Figura 14 (Memory Map) encontramos el mapa de los buses:
- *  - APB1 (Advance Periheal Bus)
+ *  - APB1 (Advance Peripheral Bus)
  *  - APB2
  *  - AHB1 (Advance High-performance Bus)
  *  - AHB2
@@ -123,17 +124,15 @@
 /**
  *  Macros Genéricos
  */
-#define ENABLE            1
-#define DISABLE           0
-#define SET               ENABLE
+#define DISABLE           (0)
+#define ENABLE	          (1)
+#define SET           	  ENABLE
 #define CLEAR             DISABLE
 #define RESET             DISABLE
-#define GPI0_PIN_SET      SET
-#define GPIO0_PIN_RESET   RESET
 #define FLAG_SET          SET
 #define FLAG_RESET        RESET
-#define I2C_WRITE         0
-#define I2C_READ          1
+#define I2C_WRITE         (0)
+#define I2C_READ          (1)
 
 
 /* +++======= INICIO de la descripción de los elementos que componen el periférico ===========+++ */
@@ -206,15 +205,15 @@ typedef struct
 /* 6.3.8 RCC_APB2RSTR */
 
 /* 6.3.9 RCC_AHB1ENR */
-#define RCC_AHB1ENR_GPIOA_EN		0
-#define RCC_AHB1ENR_GPIOB_EN		1
-#define RCC_AHB1ENR_GPIOC_EN		2
-#define RCC_AHB1ENR_GPIOD_EN		3
-#define RCC_AHB1ENR_GPIOE_EN		4
-#define RCC_AHB1ENR_GPIOH_EN		7
+#define RCC_AHB1ENR_GPIOAEN			0
+#define RCC_AHB1ENR_GPIOBEN			1
+#define RCC_AHB1ENR_GPIOCEN			2
+#define RCC_AHB1ENR_GPIODEN			3
+#define RCC_AHB1ENR_GPIOEEN			4
+#define RCC_AHB1ENR_GPIOHEN			7
 #define RCC_AHB1ENR_CRCEN			12
-#define RCC_AHB1ENR_DMA1_EN			21
-#define RCC_AHB1ENR_DMA2_EN			22
+#define RCC_AHB1ENR_DMA1EN			21
+#define RCC_AHB1ENR_DMA2EN			22
 
 /* 6.3.10 RCC_AHB1ENR */
 /* 6.3.11 RCC_APB1ENR */
@@ -268,72 +267,13 @@ typedef struct
 #define GPIOE			((GPIO_TypeDef *) GPIOE_BASE_ADDR)
 #define GPIOH			((GPIO_TypeDef *) GPIOH_BASE_ADDR)
 
-/* Descripción de cada uno de los registros del periférico (no es necesario para este) */
-
-/* Valores estándar para las configuraciones */
-/* 8.4.1 GPIOx_MODER (dos bit por cada PIN) */
-#define GPIO_MODE_IN		0
-#define GPIO_MODE_OUT		1
-#define GPIO_MODE_ALTFN		2
-#define GPIO_MODE_ANALOG	3
-
-/* 8.4.2 GPIOx_OTYPER (un bit por PIN) */
-#define GPIO_OTYPE_PUSHPULL		0
-#define GPIO_OTYPE_OPENDRAIN	1
-
-/* 8.4.3 GPIOx_OSPEEDR (dos bit por cada PIN) */
-#define GPIO_OSPEED_LOW		0
-#define GPIO_OSPEED_MEDIU	1
-#define GPIO_OSPEED_FAST	2
-#define GPIO_OSPEED_HIGH	3
-
-/* 8.4.4 GPIOx_PUPDR (dos bit por cada PIN) */
-#define GPIO_PUPDR_NOTHING		0
-#define GPIO_PUPDR_PULLUP		1
-#define GPIO_PUPDR_PULLDOWN		2
-#define GPIO_PUPDR_RESERVED		3
-
-/* 8.4.5 GPIOx_IDR (un bit por PIN) - este es el registro para leer el estado de un PIN */
-
-/* 8.4.6 GPIOx_ODR (un bit por PIN) - este es el registro para escribir el estado de un
- * PIN (1 o 0). Este registro puede ser escrito y leído desde el software, pero no garantiza
- * una escritura "atomica", por lo cual es preferible utilizar el registro BSRR */
-
-/* Definición de los nombres de los pines */
-#define PIN_0			0
-#define PIN_1			1
-#define PIN_2			2
-#define PIN_3			3
-#define PIN_4			4
-#define PIN_5			5
-#define PIN_6			6
-#define PIN_7			7
-#define PIN_8			8
-#define PIN_9			9
-#define PIN_10			10
-#define PIN_11			11
-#define PIN_12			12
-#define PIN_13			13
-#define PIN_14			14
-#define PIN_15			15
-
-/* Definición de las funciones alternativas */
-#define AF0			0b0000
-#define AF1			0b0001
-#define AF2			0b0010
-#define AF3			0b0011
-#define AF4			0b0100
-#define AF5			0b0101
-#define AF6			0b0110
-#define AF7			0b0111
-#define AF8			0b1000
-#define AF9			0b1001
-#define AF10		0b1010
-#define AF11		0b1011
-#define AF12		0b1100
-#define AF13		0b1101
-#define AF14		0b1110
-#define AF15		0b1111
+/* For testing assert parameters.  */
+#define IS_GPIO_ALL_INSTANCE(GPIOx)((GPIOx == GPIOA)	||	\
+									(GPIOx == GPIOB)	||	\
+									(GPIOx == GPIOC)	||	\
+									(GPIOx == GPIOD)	||	\
+									(GPIOx == GPIOE)	||	\
+									(GPIOx == GPIOH))
 
 /*
 typedef struct
