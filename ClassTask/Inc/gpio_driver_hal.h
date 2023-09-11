@@ -35,7 +35,7 @@ enum
 /* 8.4.2 GPIOx_OTYPER (un bit por PIN) */
 enum
 {
-	GPIO_OTYPE_PUSHPULL		= 0,
+	GPIO_OTYPE_PUSHPULL	= 0,
 	GPIO_OTYPE_OPENDRAIN
 };
 
@@ -51,7 +51,7 @@ enum
 /* 8.4.4 GPIOx_PUPDR (dos bit por cada PIN) */
 enum
 {
-	GPIO_PUPDR_NOTHING	=
+	GPIO_PUPDR_NOTHING	= 0,
 	GPIO_PUPDR_PULLUP,
 	GPIO_PUPDR_PULLDOWN,
 	GPIO_PUPDR_RESERVED
@@ -118,7 +118,7 @@ typedef struct
 	uint8_t GPIO_PinOutputSpeed;	// Output speed foe working pin
 	uint8_t GPIO_PinPuPdControl;	// Turn ON-OFF the pull_up and pull_down resistor for working pin
 	uint8_t GPIO_PinOutputType;		// Selects output type: push-pull or openDrain.
-	uint8_t GPIO_PinFunMode;		// Type of alternate function assigned to working pin
+	uint8_t GPIO_PinAltFunMode;		// Type of alternate function assigned to working pin
 
 } GPIO_PinConfig_t;
 
@@ -162,7 +162,7 @@ typedef struct
 void gpio_Config (GPIO_Handler_t *pGPIOHandler);
 void gpio_WritePin(GPIO_Handler_t *pPinHandler, uint8_t newState);
 void gpio_TooglePin(GPIO_Handler_t *pPinHandler);
-uint32_t gpio_ReadPin(GPIO_Handler_t *pPinHandler);
+uint8_t gpio_ReadPin(GPIO_Handler_t *pPinHandler);
 
 
 #endif /* GPIO_DRIVER_HAL_H_ */
