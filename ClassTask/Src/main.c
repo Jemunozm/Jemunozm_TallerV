@@ -248,9 +248,7 @@ int main(void) {
 			 */
 			for (uint32_t i = 0; i < 1337755; i++);
 
-			if(conteo == 0){
-				conteo = 60;
-			}
+
 
 			/*
 			 * Aqui llamamos a la funcion temporizador para que empiece
@@ -258,6 +256,9 @@ int main(void) {
 			 * por cada paso por el ciclo, para que vaya de 1 en 1.
 			 */
 			temporizador(&conteo);
+			if(conteo == 0){
+							conteo = 60;
+						}
 		}
 	}
 }
