@@ -143,10 +143,10 @@ int main(void) {
 	gpio_Config(&userLed);
 	gpio_Config(&userBoton);
 
-	//	gpio_WritePin(&userLed,	SET);
+		gpio_WritePin(&userLed,	SET);
 	//	uint8_t boton =	gpio_ReadPin(&userBoton);
 	//	gpio_ReadPin(&userLed);
-	//	gpio_TooglePin(&userLed);
+		gpio_TooglePin(&userLed);
 	uint8_t conteo = 0;
 
 	while (1) {
