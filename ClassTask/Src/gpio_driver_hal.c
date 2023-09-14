@@ -257,7 +257,7 @@ void gpio_TooglePin(GPIO_Handler_t *pPinHandler){
 	//creamos una variable auxiliar (mascara) donde guardaremos el valor del pin.
 	uint8_t pinValue = 0;
 	//Cambiamos el estado del pin usando XOR con un 1 en la mascara PinValue
-	pinValue = gpio_ReadPin(pPinHandler) ^= 1;
+	pinValue = gpio_ReadPin(pPinHandler) ^ 1;
 	// Escribimos el nuevo estado del pin.
 	gpio_WritePin(pPinHandler, pinValue);
 
