@@ -34,7 +34,7 @@ int main (void){
 
 	gpio_WritePin(&userLed, SET);
 
-	blinkTimer.pTIMx							= TIM2;
+	blinkTimer.pTIMx							= TIM10;
 	blinkTimer.TIMx_Config.TIMx_Prescaler		= 16000;		//Genera incrementos de 1ms
 	blinkTimer.TIMx_Config.TIMx_Period			= 250;			//De la mano con el prescaler
 	blinkTimer.TIMx_Config.TIMx_mode			= TIMER_UP_COUNTER;
@@ -56,7 +56,7 @@ int main (void){
 /*
  * Overwrite function
  */
-void Timer2_Callback(void){
+void Timer10_Callback(void){
 	gpio_TooglePin(&userLed);
 }
 

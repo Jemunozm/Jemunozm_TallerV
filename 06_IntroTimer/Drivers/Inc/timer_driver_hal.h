@@ -10,40 +10,31 @@
 
 #include "stm32f4xx.h"
 
-enum
-{
-	TIMER_INT_DISABLE	= 0,
-	TIMER_INT_ENABLE
+enum {
+	TIMER_INT_DISABLE = 0, TIMER_INT_ENABLE
 };
 
-enum
-{
-	TIMER_UP_COUNTER	= 0,
-	TIMER_DOWN_COUNTER
+enum {
+	TIMER_UP_COUNTER = 0, TIMER_DOWN_COUNTER
 };
 
-enum
-{
-	TIMER_OFF	= 0,
-	TIMER_ON
+enum {
+	TIMER_OFF = 0, TIMER_ON
 };
 
 /* Estructura que contiene la configuración minima necesaria para el manejo del  timer*/
-typedef struct
-{
-	uint8_t		TIMx_mode;				// Up or Down
-	uint16_t	TIMx_Prescaler;			// Prescaler...
-	uint32_t	TIMx_Period;			// Valoren ms del periodo del Timer
-	uint8_t		TIMx_InterruptEnable;	// Activa o desactiva el modo interrupción
+typedef struct {
+	uint8_t TIMx_mode;				// Up or Down
+	uint16_t TIMx_Prescaler;		// Prescaler...
+	uint32_t TIMx_Period;			// Valor en ms del periodo del Timer
+	uint8_t TIMx_InterruptEnable;	// Activa o desactiva el modo interrupción
 } Timer_BasicConfig_t;
 
 /* Handler paraelTimer */
-typedef struct
-{
-	TIM_TypeDef			*pTIMx;
-	Timer_BasicConfig_t	TIMx_Config;
+typedef struct {
+	TIM_TypeDef *pTIMx;
+	Timer_BasicConfig_t TIMx_Config;
 } Timer_Handler_t;
-
 
 /* For testing assert parameters - checking basic configurations. */
 #define IS_TIMER_INTERRUP(VALUE)	(((VALUE) == TIMER_INT_DISABLE) || ((VALUE) == TIMER_INT_ENBALED))
@@ -61,5 +52,11 @@ void timer_SetState(Timer_Handler_t *pTimerHandler, uint8_t newState);
 
 /* Esta función debe ser sobre-escrita en el main para que el sistema funcione*/
 void timer2_Callback(void);
+void timer3_Callback(void);
+void timer4_Callback(void);
+void timer5_Callback(void);
+void timer9_Callback(void);
+void timer10_Callback(void);
+void timer11_Callback(void);
 
 #endif /* TIMER_DRIVER_HAL_H_ */
