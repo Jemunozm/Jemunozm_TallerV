@@ -6,7 +6,6 @@
  */
 #include "stm32f4xx.h"
 #include "stm32_assert.h"
-
 #include "timer_driver_hal.h"
 
 // Variable que guarda la refencia del periférico que se esta utilizando
