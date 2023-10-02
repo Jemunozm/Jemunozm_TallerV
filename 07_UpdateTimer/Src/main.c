@@ -8,13 +8,14 @@
 #include <stdint.h>
 #include "stm32f4xx.h"
 #include "gpio_driver_hal.h"
-#include "timer_driver_hal.h"
 #include "stm32_assert.h"
+#include "exti_driver_hal.h"
 
 //Definimos un PIN de prueba
-GPIO_Handler_t userLed = {0}; // PinA5
+GPIO_Handler_t userLed 	= {0}; // PinA5
+GPIO_Handler_t btn13	= {0}; //PC13
 
-Timer_Handler_t blinkTimer = {0};
+EXTI_Config_t blinkExti 	=	{0};
 
 /*
  * The main function, where everything happens.
@@ -29,22 +30,21 @@ int main (void){
 	userLed.pinConfig.GPIO_PinOutputSpeed	= GPIO_OSPEED_MEDIUM;
 	userLed.pinConfig.GPIO_PinPuPdControl	= GPIO_PUPDR_NOTHING;
 
+	btn13.pGPIOx							= GPIOB;
+	btn13.pinConfig.GPIO_PinNumber			= PIN_13;
+	btn13.pinConfig.GPIO_PinMode			= GPIO_MODE_IN;
+
+
 	//Cargamos la configuracion  en los registros que gobiernan el puerto.
 	gpio_Config(&userLed);
 
 	gpio_WritePin(&userLed, SET);
 
-	blinkTimer.pTIMx							= TIM10;
-	blinkTimer.TIMx_Config.TIMx_Prescaler		= 16000;		//Genera incrementos de 1ms
-	blinkTimer.TIMx_Config.TIMx_Period			= 250;			//De la mano con el prescaler
-	blinkTimer.TIMx_Config.TIMx_mode			= TIMER_UP_COUNTER;
-	blinkTimer.TIMx_Config.TIMx_InterruptEnable	= TIMER_INT_ENABLE;
+	blinkExti.pGPIOHandler					= &btn13;
+	blinkExti.edgeType						= EXTERNAL_INTERRUPT_RISING_EDGE;
 
-	//Configuramos el Timer
-	timer_Config(&blinkTimer);
+	exti_Config(&blinkExti);
 
-	//Encendemos el Timer
-	timer_SetState(&blinkTimer, TIMER_ON);
 
 	while(1){
 
@@ -56,7 +56,10 @@ int main (void){
 /*
  * Overwrite function
  */
-void Timer10_Callback(void){
+//void Timer10_Callback(void){
+//	gpio_TooglePin(&userLed);
+//}
+void callback_ExtInt13(void){
 	gpio_TooglePin(&userLed);
 }
 
