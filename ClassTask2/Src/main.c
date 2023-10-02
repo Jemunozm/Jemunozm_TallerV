@@ -38,14 +38,15 @@ EXTI_Config_t ckExti 	=	{0}; //Exti linea 13 para el ck del enconder.
  * The main function, where everything happens.
  */
 
-uint8_t bit0 = 0;
-uint8_t bit0n = 0;
-uint8_t bit1 = 0;
-uint8_t bit1n = 0;
-uint8_t bit2 = 0;
-uint8_t bit2n = 0;
-uint8_t bit3 = 0;
-uint8_t i = 0;
+uint8_t bit0 	= 0;
+uint8_t bit0n 	= 0;
+uint8_t bit1 	= 0;
+uint8_t bit1n 	= 0;
+uint8_t bit2	= 0;
+uint8_t bit2n	= 0;
+uint8_t bit3 	= 0;
+uint8_t unidad 	= 0;
+uint8_t decena 	= 0;
 
 uint8_t pinA = 0;
 uint8_t pinB = 0;
@@ -55,8 +56,22 @@ uint8_t pinE = 0;
 uint8_t pinF = 0;
 uint8_t pinG = 0;
 
-uint8_t dir	 = 0;
-uint8_t cs7segments	 = 0;
+uint8_t dir0	 	= 0;
+uint8_t dir1	 	= 0;
+uint8_t dirResult	= 0;
+uint8_t decenascase	= 0;
+
+void write7segments(uint8_t numero);
+
+/*
+ * Necesito mejorarel uso de un enum
+ */
+//enum{
+//	restaDerecha		= 00,
+//	sumaDerecha,
+//	sumaIzquierda,
+//	restaIzquierda
+//} casosEncoder;
 
 int main (void){
 
@@ -166,7 +181,7 @@ int main (void){
 	/* Configuramos el timer del 7-segmentos (TIM4) */
 	displayTimer.pTIMx								=	TIM2;
 	displayTimer.TIMx_Config.TIMx_Prescaler			=	16000;
-	displayTimer.TIMx_Config.TIMx_Period			=	33;
+	displayTimer.TIMx_Config.TIMx_Period			=	100;
 	displayTimer.TIMx_Config.TIMx_mode				=	TIMER_UP_COUNTER;
 	displayTimer.TIMx_Config.TIMx_InterruptEnable	=	TIMER_INT_ENABLE;
 
@@ -191,30 +206,26 @@ int main (void){
 	//Cargamos la configuracion de las interrupciones exxternas (EXTI)
 	exti_Config(&swExti);
 	exti_Config(&ckExti);
-
-
-	bit0 = (i>>0)&1;
-	bit0n = (~i>>0)&1;
-	bit1 = (i>>1)&1;
-	bit1n = (~i>>1)&1;
-	bit2 = (i>>2)&1;
-	bit2n = (~i>>2)&1;
-	bit3 = (i>>3)&1;
-	pinA = ( bit3 | bit1 ) | (( ~( bit0 ^ bit2 ))&1);
-	pinB = bit2n | ((~( bit1 ^ bit0 ))&1);
-	pinC = bit2 | bit1n | bit0;
-	pinD = (bit1 & bit0n) | (bit2n & bit0n) | (bit2n & bit1) | (bit2 & bit1n & bit0) ;
-	pinE = (bit1 & bit0n) | (bit2n & bit0n) ;
-	pinF = bit3 | (bit2 & bit1n) | (bit2 & bit0n) | (bit1n & bit0n);
-	pinG = bit3 | (bit2 ^ bit1) | (bit1 & bit0n);
-
 	while(1){
+
 	}
 }
 
 void Timer2_Callback(void){
-	switch (cs7segments){
+	/*
+	 * Aplicaremos un XOR a una variable (decenascase) la cual
+	 * nos ayudará a elegir el caso del switch.
+	 */
+	decenascase ^= 1;
+	/*
+	 * Creamos un switch para que luego con los transistores, esto
+	 * nos genere dos posibles salidas para así tener dos numeros
+	 * el derecho las unidades (caso 0)
+	 * y el izquierdo las decenas (caso 1)
+	 */
+	switch (decenascase){
 	case 0:{
+		write7segments(unidad);
 		gpio_WritePin(&userLed1, pinA);
 		gpio_WritePin(&userLed2, pinB);
 		gpio_WritePin(&userLed3, pinC);
@@ -225,6 +236,7 @@ void Timer2_Callback(void){
 		break;
 	}
 	case 1:{
+		write7segments(decena);
 		gpio_WritePin(&userLed1, pinA);
 		gpio_WritePin(&userLed2, pinB);
 		gpio_WritePin(&userLed3, pinC);
@@ -233,11 +245,11 @@ void Timer2_Callback(void){
 		gpio_WritePin(&userLed6, pinF);
 		gpio_WritePin(&userLed7, pinG);
 		break;
-	}
-	}default: {
+		}
+	default: {
 		break;
+		}
 	}
-
 }
 
 void Timer4_Callback(void){
@@ -245,110 +257,111 @@ void Timer4_Callback(void){
 }
 
 void callback_ExtInt3(void){
-	dir ^= 1;
+	/*
+	 * Cada vez que presionamos el boton asociado a esta interrupción
+	 * hacemos un XOR para así cambiar el estado y asu vez la dirección
+	 * del encoder.
+	 */
+	dir0 ^= 1;
 }
 
 void callback_ExtInt13(void){
+	//almacenamos la informacion recibida por los datos
+	dir1 = gpio_ReadPin(&userData);
+
+	//ACtualizamos la variable que nos dará la direccion de conteo para los casos.
+	dirResult = (dir0<<1) | (dir1<<0);
 	// verificamos el boton ya que nos indica direccion
-	if (dir==0){
-		// direccion manecillas del reloj
-		if(gpio_ReadPin(&userData)==1){
-			if (i==9){
-				i = 0;
+	/*
+	 * Este switch nos da las sposbiles opciones de lectura del encoder
+	 * debido a sus interrupciones.
+	 * Estos casos estan explicados al inicio con un enum fallido :C
+	 */
+	switch(dirResult){
+		case 0:{
+			if (unidad == 0){
+				unidad = 9;
+				if (decena == 0){
+					decena = 9;
+				}
+				else{
+					decena --;
+				}
 			}else{
-				i++;
+				unidad--;
 			}
-			bit0 = (i>>0)&1;
-			bit0n = (~i>>0)&1;
-			bit1 = (i>>1)&1;
-			bit1n = (~i>>1)&1;
-			bit2 = (i>>2)&1;
-			bit2n = (~i>>2)&1;
-			bit3 = (i>>3)&1;
-
-			pinA = ( bit3 | bit1 ) | (( ~( bit0 ^ bit2 ))&1);
-			pinB = bit2n | ((~( bit1 ^ bit0 ))&1);
-			pinC = bit2 | bit1n | bit0;
-			pinD = (bit1 & bit0n) | (bit2n & bit0n) | (bit2n & bit1) | (bit2 & bit1n & bit0) ;
-			pinE = (bit1 & bit0n) | (bit2n & bit0n) ;
-			pinF = bit3 | (bit2 & bit1n) | (bit2 & bit0n) | (bit1n & bit0n);
-			pinG = bit3 | (bit2 ^ bit1) | (bit1 & bit0n);
+			break;
 		}
-		//Direccion en contra de las manecillas del reloj
-		else{
-			if (i==0){
-				i = 9;
+		case 1:{
+			if (unidad==9){
+				unidad = 0;
+				if (decena == 9){
+					decena = 0;
+				}
+				else{
+					decena ++;
+				}
 			}else{
-				i--;
+				unidad++;
 			}
-			bit0 = (i>>0)&1;
-			bit0n = (~i>>0)&1;
-			bit1 = (i>>1)&1;
-			bit1n = (~i>>1)&1;
-			bit2 = (i>>2)&1;
-			bit2n = (~i>>2)&1;
-			bit3 = (i>>3)&1;
-
-			pinA = ( bit3 | bit1 ) | (( ~( bit0 ^ bit2 ))&1);
-			pinB = bit2n | ((~( bit1 ^ bit0 ))&1);
-			pinC = bit2 | bit1n | bit0;
-			pinD = (bit1 & bit0n) | (bit2n & bit0n) | (bit2n & bit1) | (bit2 & bit1n & bit0) ;
-			pinE = (bit1 & bit0n) | (bit2n & bit0n) ;
-			pinF = bit3 | (bit2 & bit1n) | (bit2 & bit0n) | (bit1n & bit0n);
-			pinG = bit3 | (bit2 ^ bit1) | (bit1 & bit0n);
+			break;
 		}
-	}
-	// verificamos el boton ya que nos indica direccion (caso contrario)
-	else{
-		// direccion manecillas del reloj
-		if(gpio_ReadPin(&userData)==0){
-			if (i==9){
-				i = 0;
+		case 2:{
+			if (unidad==9){
+				unidad = 0;
+				if (decena == 9){
+					decena = 0;
+				}
+				else{
+					decena ++;
+				}
 			}else{
-				i++;
+				unidad++;
 			}
-			bit0 = (i>>0)&1;
-			bit0n = (~i>>0)&1;
-			bit1 = (i>>1)&1;
-			bit1n = (~i>>1)&1;
-			bit2 = (i>>2)&1;
-			bit2n = (~i>>2)&1;
-			bit3 = (i>>3)&1;
-
-			pinA = ( bit3 | bit1 ) | (( ~( bit0 ^ bit2 ))&1);
-			pinB = bit2n | ((~( bit1 ^ bit0 ))&1);
-			pinC = bit2 | bit1n | bit0;
-			pinD = (bit1 & bit0n) | (bit2n & bit0n) | (bit2n & bit1) | (bit2 & bit1n & bit0) ;
-			pinE = (bit1 & bit0n) | (bit2n & bit0n) ;
-			pinF = bit3 | (bit2 & bit1n) | (bit2 & bit0n) | (bit1n & bit0n);
-			pinG = bit3 | (bit2 ^ bit1) | (bit1 & bit0n);
+			break;
 		}
-		//Direccion en contra de las manecillas del reloj
-		else{
-			if (i==0){
-				i = 9;
+		case 3:{
+			if (unidad==0){
+				unidad = 9;
+				if (decena == 0){
+					decena = 9;
+				}
+				else{
+					decena --;
+				}
 			}else{
-				i--;
+				unidad--;
 			}
-			bit0 = (i>>0)&1;
-			bit0n = (~i>>0)&1;
-			bit1 = (i>>1)&1;
-			bit1n = (~i>>1)&1;
-			bit2 = (i>>2)&1;
-			bit2n = (~i>>2)&1;
-			bit3 = (i>>3)&1;
-
-			pinA = ( bit3 | bit1 ) | (( ~( bit0 ^ bit2 ))&1);
-			pinB = bit2n | ((~( bit1 ^ bit0 ))&1);
-			pinC = bit2 | bit1n | bit0;
-			pinD = (bit1 & bit0n) | (bit2n & bit0n) | (bit2n & bit1) | (bit2 & bit1n & bit0) ;
-			pinE = (bit1 & bit0n) | (bit2n & bit0n) ;
-			pinF = bit3 | (bit2 & bit1n) | (bit2 & bit0n) | (bit1n & bit0n);
-			pinG = bit3 | (bit2 ^ bit1) | (bit1 & bit0n);
+			break;
+		}
+		default:{
+			break;
 		}
 	}
 }
 
+/*
+ * Funcion que recibe como parametro una variable que
+ * contiene un numeroen binario, ara así cambiar unas variables globales
+ * con las que escribimos los numeros en el 7 segmentos.
+ */
+void write7segments(uint8_t numero){
+	bit0 = (numero>>0)&1;
+	bit0n = (~numero>>0)&1;
+	bit1 = (numero>>1)&1;
+	bit1n = (~numero>>1)&1;
+	bit2 = (numero>>2)&1;
+	bit2n = (~numero>>2)&1;
+	bit3 = (numero>>3)&1;
+
+	pinA = ( bit3 | bit1 ) | (( ~( bit0 ^ bit2 ))&1);
+	pinB = bit2n | ((~( bit1 ^ bit0 ))&1);
+	pinC = bit2 | bit1n | bit0;
+	pinD = (bit1 & bit0n) | (bit2n & bit0n) | (bit2n & bit1) | (bit2 & bit1n & bit0) ;
+	pinE = (bit1 & bit0n) | (bit2n & bit0n) ;
+	pinF = bit3 | (bit2 & bit1n) | (bit2 & bit0n) | (bit1n & bit0n);
+	pinG = bit3 | (bit2 ^ bit1) | (bit1 & bit0n);
+}
 
 
 /*
