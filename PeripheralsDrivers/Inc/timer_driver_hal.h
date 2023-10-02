@@ -30,7 +30,7 @@ typedef struct {
 	uint8_t TIMx_InterruptEnable;	// Activa o desactiva el modo interrupción
 } Timer_BasicConfig_t;
 
-/* Handler paraelTimer */
+/* Handler para el Timer */
 typedef struct {
 	TIM_TypeDef *pTIMx;
 	Timer_BasicConfig_t TIMx_Config;
