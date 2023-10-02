@@ -38,6 +38,15 @@ EXTI_Config_t ckExti 	=	{0}; //Exti linea 13 para el ck del enconder.
  * The main function, where everything happens.
  */
 
+uint8_t bit0 = 0;
+uint8_t bit0n = 0;
+uint8_t bit1 = 0;
+uint8_t bit1n = 0;
+uint8_t bit2 = 0;
+uint8_t bit2n = 0;
+uint8_t bit3 = 0;
+uint8_t i = 0;
+
 uint8_t pinA = 0;
 uint8_t pinB = 0;
 uint8_t pinC = 0;
@@ -45,6 +54,9 @@ uint8_t pinD = 0;
 uint8_t pinE = 0;
 uint8_t pinF = 0;
 uint8_t pinG = 0;
+
+uint8_t dir	 = 0;
+uint8_t cs7segments	 = 0;
 
 int main (void){
 
@@ -115,12 +127,12 @@ int main (void){
 	userLed7.pinConfig.GPIO_PinPuPdControl	= GPIO_PUPDR_NOTHING;
 
 	userData.pGPIOx							= GPIOB;
-	userData.pinConfig.GPIO_PinNumber		= PIN_3;
+	userData.pinConfig.GPIO_PinNumber		= PIN_5;
 	userData.pinConfig.GPIO_PinMode			= GPIO_MODE_IN;
 
-//	userSWenc.pGPIOx						= GPIOB;
-//	userSWenc.pinConfig.GPIO_PinNumber		= PIN_3;
-//	userSWenc.pinConfig.GPIO_PinMode		= GPIO_MODE_IN;
+	userSWenc.pGPIOx						= GPIOB;
+	userSWenc.pinConfig.GPIO_PinNumber		= PIN_3;
+	userSWenc.pinConfig.GPIO_PinMode		= GPIO_MODE_IN;
 
 	userCKenc.pGPIOx						= GPIOB;
 	userCKenc.pinConfig.GPIO_PinNumber		= PIN_13;
@@ -145,14 +157,14 @@ int main (void){
 	//Configuramos los timers
 
 	/* Configuramos el timer del blink (TIM2) */
-	blinkTimer.pTIMx								=	TIM2;
+	blinkTimer.pTIMx								=	TIM4;
 	blinkTimer.TIMx_Config.TIMx_Prescaler			=	16000;
 	blinkTimer.TIMx_Config.TIMx_Period				=	250;
 	blinkTimer.TIMx_Config.TIMx_mode				=	TIMER_UP_COUNTER;
 	blinkTimer.TIMx_Config.TIMx_InterruptEnable		=	TIMER_INT_ENABLE;
 
 	/* Configuramos el timer del 7-segmentos (TIM4) */
-	displayTimer.pTIMx								=	TIM4;
+	displayTimer.pTIMx								=	TIM2;
 	displayTimer.TIMx_Config.TIMx_Prescaler			=	16000;
 	displayTimer.TIMx_Config.TIMx_Period			=	33;
 	displayTimer.TIMx_Config.TIMx_mode				=	TIMER_UP_COUNTER;
@@ -180,19 +192,72 @@ int main (void){
 	exti_Config(&swExti);
 	exti_Config(&ckExti);
 
-	uint8_t bit0 = 0;
-	uint8_t bit0n = 0;
-	uint8_t bit1 = 0;
-	uint8_t bit1n = 0;
-	uint8_t bit2 = 0;
-	uint8_t bit2n = 0;
-	uint8_t bit3 = 0;
-	uint8_t i = 0;
+
+	bit0 = (i>>0)&1;
+	bit0n = (~i>>0)&1;
+	bit1 = (i>>1)&1;
+	bit1n = (~i>>1)&1;
+	bit2 = (i>>2)&1;
+	bit2n = (~i>>2)&1;
+	bit3 = (i>>3)&1;
+	pinA = ( bit3 | bit1 ) | (( ~( bit0 ^ bit2 ))&1);
+	pinB = bit2n | ((~( bit1 ^ bit0 ))&1);
+	pinC = bit2 | bit1n | bit0;
+	pinD = (bit1 & bit0n) | (bit2n & bit0n) | (bit2n & bit1) | (bit2 & bit1n & bit0) ;
+	pinE = (bit1 & bit0n) | (bit2n & bit0n) ;
+	pinF = bit3 | (bit2 & bit1n) | (bit2 & bit0n) | (bit1n & bit0n);
+	pinG = bit3 | (bit2 ^ bit1) | (bit1 & bit0n);
 
 	while(1){
+	}
+}
 
-		if((gpio_ReadPin(&userCKenc)==0 ) && (gpio_ReadPin(&userData) == 0)){
-			i++;
+void Timer2_Callback(void){
+	switch (cs7segments){
+	case 0:{
+		gpio_WritePin(&userLed1, pinA);
+		gpio_WritePin(&userLed2, pinB);
+		gpio_WritePin(&userLed3, pinC);
+		gpio_WritePin(&userLed4, pinD);
+		gpio_WritePin(&userLed5, pinE);
+		gpio_WritePin(&userLed6, pinF);
+		gpio_WritePin(&userLed7, pinG);
+		break;
+	}
+	case 1:{
+		gpio_WritePin(&userLed1, pinA);
+		gpio_WritePin(&userLed2, pinB);
+		gpio_WritePin(&userLed3, pinC);
+		gpio_WritePin(&userLed4, pinD);
+		gpio_WritePin(&userLed5, pinE);
+		gpio_WritePin(&userLed6, pinF);
+		gpio_WritePin(&userLed7, pinG);
+		break;
+	}
+	}default: {
+		break;
+	}
+
+}
+
+void Timer4_Callback(void){
+	gpio_TooglePin(&userLed);
+}
+
+void callback_ExtInt3(void){
+	dir ^= 1;
+}
+
+void callback_ExtInt13(void){
+	// verificamos el boton ya que nos indica direccion
+	if (dir==0){
+		// direccion manecillas del reloj
+		if(gpio_ReadPin(&userData)==1){
+			if (i==9){
+				i = 0;
+			}else{
+				i++;
+			}
 			bit0 = (i>>0)&1;
 			bit0n = (~i>>0)&1;
 			bit1 = (i>>1)&1;
@@ -208,55 +273,82 @@ int main (void){
 			pinE = (bit1 & bit0n) | (bit2n & bit0n) ;
 			pinF = bit3 | (bit2 & bit1n) | (bit2 & bit0n) | (bit1n & bit0n);
 			pinG = bit3 | (bit2 ^ bit1) | (bit1 & bit0n);
+		}
+		//Direccion en contra de las manecillas del reloj
+		else{
+			if (i==0){
+				i = 9;
+			}else{
+				i--;
+			}
+			bit0 = (i>>0)&1;
+			bit0n = (~i>>0)&1;
+			bit1 = (i>>1)&1;
+			bit1n = (~i>>1)&1;
+			bit2 = (i>>2)&1;
+			bit2n = (~i>>2)&1;
+			bit3 = (i>>3)&1;
+
+			pinA = ( bit3 | bit1 ) | (( ~( bit0 ^ bit2 ))&1);
+			pinB = bit2n | ((~( bit1 ^ bit0 ))&1);
+			pinC = bit2 | bit1n | bit0;
+			pinD = (bit1 & bit0n) | (bit2n & bit0n) | (bit2n & bit1) | (bit2 & bit1n & bit0) ;
+			pinE = (bit1 & bit0n) | (bit2n & bit0n) ;
+			pinF = bit3 | (bit2 & bit1n) | (bit2 & bit0n) | (bit1n & bit0n);
+			pinG = bit3 | (bit2 ^ bit1) | (bit1 & bit0n);
+		}
+	}
+	// verificamos el boton ya que nos indica direccion (caso contrario)
+	else{
+		// direccion manecillas del reloj
+		if(gpio_ReadPin(&userData)==0){
 			if (i==9){
 				i = 0;
+			}else{
+				i++;
 			}
+			bit0 = (i>>0)&1;
+			bit0n = (~i>>0)&1;
+			bit1 = (i>>1)&1;
+			bit1n = (~i>>1)&1;
+			bit2 = (i>>2)&1;
+			bit2n = (~i>>2)&1;
+			bit3 = (i>>3)&1;
+
+			pinA = ( bit3 | bit1 ) | (( ~( bit0 ^ bit2 ))&1);
+			pinB = bit2n | ((~( bit1 ^ bit0 ))&1);
+			pinC = bit2 | bit1n | bit0;
+			pinD = (bit1 & bit0n) | (bit2n & bit0n) | (bit2n & bit1) | (bit2 & bit1n & bit0) ;
+			pinE = (bit1 & bit0n) | (bit2n & bit0n) ;
+			pinF = bit3 | (bit2 & bit1n) | (bit2 & bit0n) | (bit1n & bit0n);
+			pinG = bit3 | (bit2 ^ bit1) | (bit1 & bit0n);
 		}
+		//Direccion en contra de las manecillas del reloj
+		else{
+			if (i==0){
+				i = 9;
+			}else{
+				i--;
+			}
+			bit0 = (i>>0)&1;
+			bit0n = (~i>>0)&1;
+			bit1 = (i>>1)&1;
+			bit1n = (~i>>1)&1;
+			bit2 = (i>>2)&1;
+			bit2n = (~i>>2)&1;
+			bit3 = (i>>3)&1;
 
-//		for(uint8_t i = 0; i < 10; i++){
-//
-//			bit0 = (i>>0)&1;
-//			bit0n = (~i>>0)&1;
-//			bit1 = (i>>1)&1;
-//			bit1n = (~i>>1)&1;
-//			bit2 = (i>>2)&1;
-//			bit2n = (~i>>2)&1;
-//			bit3 = (i>>3)&1;
-//
-//			pinA = ( bit3 | bit1 ) | (( ~( bit0 ^ bit2 ))&1);
-//			pinB = bit2n | ((~( bit1 ^ bit0 ))&1);
-//			pinC = bit2 | bit1n | bit0;
-//			pinD = (bit1 & bit0n) | (bit2n & bit0n) | (bit2n & bit1) | (bit2 & bit1n & bit0) ;
-//			pinE = (bit1 & bit0n) | (bit2n & bit0n) ;
-//			pinF = bit3 | (bit2 & bit1n) | (bit2 & bit0n) | (bit1n & bit0n);
-//			pinG = bit3 | (bit2 ^ bit1) | (bit1 & bit0n);
-//			for (uint32_t i = 0; i < 1337755; i++);
-//
-//
-//		}
-
-
+			pinA = ( bit3 | bit1 ) | (( ~( bit0 ^ bit2 ))&1);
+			pinB = bit2n | ((~( bit1 ^ bit0 ))&1);
+			pinC = bit2 | bit1n | bit0;
+			pinD = (bit1 & bit0n) | (bit2n & bit0n) | (bit2n & bit1) | (bit2 & bit1n & bit0) ;
+			pinE = (bit1 & bit0n) | (bit2n & bit0n) ;
+			pinF = bit3 | (bit2 & bit1n) | (bit2 & bit0n) | (bit1n & bit0n);
+			pinG = bit3 | (bit2 ^ bit1) | (bit1 & bit0n);
+		}
 	}
 }
 
-void Timer2_Callback(void){
-	gpio_TooglePin(&userLed);
-	gpio_WritePin(&userLed1, pinA);
-	gpio_WritePin(&userLed2, pinB);
-	gpio_WritePin(&userLed3, pinC);
-	gpio_WritePin(&userLed4, pinD);
-	gpio_WritePin(&userLed5, pinE);
-	gpio_WritePin(&userLed6, pinF);
-	gpio_WritePin(&userLed7, pinG);
-}
-
-void callback_ExtInt13(void){
-	gpio_TooglePin(&userCKenc);
-
-}
-void callback_ExtInt3(void){
-
-}
 
 
 /*
