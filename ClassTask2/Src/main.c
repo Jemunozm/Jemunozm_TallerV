@@ -13,23 +13,23 @@
 #include "timer_driver_hal.h"
 
 //Definimos los pines que se van a utilizar.
-GPIO_Handler_t userLed = { 0 }; // PinA5
-GPIO_Handler_t userLed1 = { 0 }; // PinC6
-GPIO_Handler_t userLed2 = { 0 }; // PinA7
-GPIO_Handler_t userLed3 = { 0 }; // PinC8
-GPIO_Handler_t userLed4 = { 0 }; // PinA9
-GPIO_Handler_t userLed5 = { 0 }; // PinC9
-GPIO_Handler_t userLed6 = { 0 }; // PinA7
-GPIO_Handler_t userLed7 = { 0 }; // PinA8
-GPIO_Handler_t userDir 	= { 0 }; // Dirección de lectura
-GPIO_Handler_t userSwitch = { 0 }; // PinA10
-GPIO_Handler_t userData = { 0 }; // Pin
-GPIO_Handler_t userSWenc = { 0 }; // Pin
-GPIO_Handler_t userCKenc = { 0 }; // Pin
+GPIO_Handler_t userLed 		= { 0 }; // PinA5
+GPIO_Handler_t userLed1 	= { 0 }; // PinC6
+GPIO_Handler_t userLed2 	= { 0 }; // PinA7
+GPIO_Handler_t userLed3 	= { 0 }; // PinC8
+GPIO_Handler_t userLed4 	= { 0 }; // PinA9
+GPIO_Handler_t userLed5 	= { 0 }; // PinC9
+GPIO_Handler_t userLed6 	= { 0 }; // PinA7
+GPIO_Handler_t userLed7 	= { 0 }; // PinA8
+GPIO_Handler_t userDir 		= { 0 }; // PinB12
+GPIO_Handler_t userSwitch 	= { 0 }; // PinA10
+GPIO_Handler_t userData 	= { 0 }; // PinB5
+GPIO_Handler_t userSWenc 	= { 0 }; // PinB3
+GPIO_Handler_t userCKenc 	= { 0 }; // PinB13
 
 //Definimos los timers que se emplearan.
-Timer_Handler_t blinkTimer = { 0 }; // Timer para el blinky PinA5
-Timer_Handler_t displayTimer = { 0 }; // Timer para el 7-segmentos
+Timer_Handler_t blinkTimer 		= { 0 }; // Timer para el blinky PinA5
+Timer_Handler_t displayTimer 	= { 0 }; // Timer para el 7-segmentos
 
 //Definimos las lineas EXTI que vamos a utilizar.
 EXTI_Config_t swExti = { 0 }; //Exti linea 3 para el sw del encoder
@@ -39,6 +39,13 @@ EXTI_Config_t ckExti = { 0 }; //Exti linea 13 para el ck del enconder.
  * The main function, where everything happens.
  */
 
+/*
+ * Creación de variables globales para convertir un numero de binario
+ * a un numero de 7 segmentos.
+ * Teniendo en cuenta una configuración antes vista (primeras semanas de clase)
+ */
+
+// Variables de los bits que se encienden para generar cada numero del 0 al 9
 uint8_t bit0 = 0;
 uint8_t bit0n = 0;
 uint8_t bit1 = 0;
@@ -46,9 +53,8 @@ uint8_t bit1n = 0;
 uint8_t bit2 = 0;
 uint8_t bit2n = 0;
 uint8_t bit3 = 0;
-uint8_t unidad = 0;
-uint8_t decena = 0;
 
+// Variables de cada led del 7 segmento.
 uint8_t pinA = 0;
 uint8_t pinB = 0;
 uint8_t pinC = 0;
@@ -57,16 +63,22 @@ uint8_t pinE = 0;
 uint8_t pinF = 0;
 uint8_t pinG = 0;
 
+//Variables auxiliares que nos ayudaran en el codigo
 uint8_t dir0 = 0;
 uint8_t dir1 = 0;
 uint8_t dirResult = 0;
-uint8_t decenascase = 0;
+uint8_t switch7segment = 0;
+uint8_t numero = 0;
+uint8_t unidad = 0;
+uint8_t decena = 0;
 
+//llamamos las funciones definidas al final del codigo
 void write7segments(uint8_t numero);
+void suma(uint8_t *conteo);
+void resta(uint8_t *conteo);
 
-/*
- * Necesito mejorarel uso de un enum
- */
+//Creación de un enum con los cuatro posibles casos del encoder y tarea.
+
 enum {
 	restaDerecha = 00, sumaDerecha, sumaIzquierda, restaIzquierda
 } casosEncoder;
@@ -83,6 +95,7 @@ int main(void) {
 	userLed.pinConfig.GPIO_PinOutputSpeed = GPIO_OSPEED_MEDIUM;
 	userLed.pinConfig.GPIO_PinPuPdControl = GPIO_PUPDR_NOTHING;
 
+	/* Configuramos el PinC6 */
 	userLed1.pGPIOx = GPIOC;
 	userLed1.pinConfig.GPIO_PinNumber = PIN_6;
 	userLed1.pinConfig.GPIO_PinMode = GPIO_MODE_OUT;
@@ -90,6 +103,7 @@ int main(void) {
 	userLed1.pinConfig.GPIO_PinOutputSpeed = GPIO_OSPEED_MEDIUM;
 	userLed1.pinConfig.GPIO_PinPuPdControl = GPIO_PUPDR_NOTHING;
 
+	/* Configuramos el PinA7 */
 	userLed2.pGPIOx = GPIOA;
 	userLed2.pinConfig.GPIO_PinNumber = PIN_7;
 	userLed2.pinConfig.GPIO_PinMode = GPIO_MODE_OUT;
@@ -97,6 +111,7 @@ int main(void) {
 	userLed2.pinConfig.GPIO_PinOutputSpeed = GPIO_OSPEED_MEDIUM;
 	userLed2.pinConfig.GPIO_PinPuPdControl = GPIO_PUPDR_NOTHING;
 
+	/* Configuramos el PinC8 */
 	userLed3.pGPIOx = GPIOC;
 	userLed3.pinConfig.GPIO_PinNumber = PIN_8;
 	userLed3.pinConfig.GPIO_PinMode = GPIO_MODE_OUT;
@@ -104,6 +119,7 @@ int main(void) {
 	userLed3.pinConfig.GPIO_PinOutputSpeed = GPIO_OSPEED_MEDIUM;
 	userLed3.pinConfig.GPIO_PinPuPdControl = GPIO_PUPDR_NOTHING;
 
+	/* Configuramos el PinA9 */
 	userLed4.pGPIOx = GPIOA;
 	userLed4.pinConfig.GPIO_PinNumber = PIN_9;
 	userLed4.pinConfig.GPIO_PinMode = GPIO_MODE_OUT;
@@ -111,6 +127,7 @@ int main(void) {
 	userLed4.pinConfig.GPIO_PinOutputSpeed = GPIO_OSPEED_MEDIUM;
 	userLed4.pinConfig.GPIO_PinPuPdControl = GPIO_PUPDR_NOTHING;
 
+	/* Configuramos el PinC9 */
 	userLed5.pGPIOx = GPIOC;
 	userLed5.pinConfig.GPIO_PinNumber = PIN_9;
 	userLed5.pinConfig.GPIO_PinMode = GPIO_MODE_OUT;
@@ -118,6 +135,7 @@ int main(void) {
 	userLed5.pinConfig.GPIO_PinOutputSpeed = GPIO_OSPEED_MEDIUM;
 	userLed5.pinConfig.GPIO_PinPuPdControl = GPIO_PUPDR_NOTHING;
 
+	/* Configuramos el PinA6 */
 	userLed6.pGPIOx = GPIOA;
 	userLed6.pinConfig.GPIO_PinNumber = PIN_6;
 	userLed6.pinConfig.GPIO_PinMode = GPIO_MODE_OUT;
@@ -125,6 +143,7 @@ int main(void) {
 	userLed6.pinConfig.GPIO_PinOutputSpeed = GPIO_OSPEED_MEDIUM;
 	userLed6.pinConfig.GPIO_PinPuPdControl = GPIO_PUPDR_NOTHING;
 
+	/* Configuramos el PinA8 */
 	userLed7.pGPIOx = GPIOA;
 	userLed7.pinConfig.GPIO_PinNumber = PIN_8;
 	userLed7.pinConfig.GPIO_PinMode = GPIO_MODE_OUT;
@@ -132,6 +151,7 @@ int main(void) {
 	userLed7.pinConfig.GPIO_PinOutputSpeed = GPIO_OSPEED_MEDIUM;
 	userLed7.pinConfig.GPIO_PinPuPdControl = GPIO_PUPDR_NOTHING;
 
+	/* Configuramos el PinB12 */
 	userDir.pGPIOx = GPIOB;
 	userDir.pinConfig.GPIO_PinNumber = PIN_12;
 	userDir.pinConfig.GPIO_PinMode = GPIO_MODE_OUT;
@@ -139,21 +159,25 @@ int main(void) {
 	userDir.pinConfig.GPIO_PinOutputSpeed = GPIO_OSPEED_MEDIUM;
 	userDir.pinConfig.GPIO_PinPuPdControl = GPIO_PUPDR_NOTHING;
 
+	/* Configuramos el PinA10 */
 	userSwitch.pGPIOx = GPIOA;
 	userSwitch.pinConfig.GPIO_PinNumber = PIN_10;
 	userSwitch.pinConfig.GPIO_PinMode = GPIO_MODE_OUT;
 	userSwitch.pinConfig.GPIO_PinOutputType = GPIO_OTYPE_PUSHPULL;
-	userSwitch.pinConfig.GPIO_PinOutputSpeed = GPIO_OSPEED_HIGH;
-	userSwitch.pinConfig.GPIO_PinPuPdControl = GPIO_PUPDR_NOTHING;
+	userSwitch.pinConfig.GPIO_PinOutputSpeed = GPIO_OSPEED_MEDIUM;
+	userSwitch.pinConfig.GPIO_PinPuPdControl = GPIO_PUPDR_PULLDOWN;
 
+	/* Configuramos el PinB5 */
 	userData.pGPIOx = GPIOB;
 	userData.pinConfig.GPIO_PinNumber = PIN_5;
 	userData.pinConfig.GPIO_PinMode = GPIO_MODE_IN;
 
+	/* Configuramos el PinB3 */
 	userSWenc.pGPIOx						= GPIOB;
 	userSWenc.pinConfig.GPIO_PinNumber		= PIN_3;
 	userSWenc.pinConfig.GPIO_PinMode		= GPIO_MODE_IN;
 
+	/* Configuramos el PinB13 */
 	userCKenc.pGPIOx = GPIOB;
 	userCKenc.pinConfig.GPIO_PinNumber = PIN_13;
 	userCKenc.pinConfig.GPIO_PinMode = GPIO_MODE_IN;
@@ -173,6 +197,7 @@ int main(void) {
 	gpio_Config(&userSWenc);
 	gpio_Config(&userCKenc);
 
+	//Encendemos el led que nos indica que se cargaron las configuraciones
 	gpio_WritePin(&userLed, SET);
 
 	//Configuramos los timers
@@ -211,8 +236,6 @@ int main(void) {
 	swExti.pGPIOHandler->pinConfig.GPIO_PinMode = GPIO_MODE_IN;
 	swExti.edgeType = EXTERNAL_INTERRUPT_RISING_EDGE;
 
-	gpio_Config(swExti.pGPIOHandler);
-
 	/* Configuramos el EXTI ck que será en la linea 13 */
 	ckExti.pGPIOHandler = &userCKenc;
 	ckExti.edgeType = EXTERNAL_INTERRUPT_RISING_EDGE;
@@ -220,27 +243,54 @@ int main(void) {
 	//Cargamos la configuracion de las interrupciones exxternas (EXTI)
 	exti_Config(&swExti);
 	exti_Config(&ckExti);
-	while (1) {
 
+	//Encedemos el LED que nos indica que estamos en modo Directo.
+	gpio_WritePin(&userDir, SET);
+	while (1) {
+		//Actualizamos dos nuestras variables auxiliares.
+		unidad = numero%10;
+		decena = numero/10;
 	}
 }
 
 void Timer2_Callback(void) {
+
 	/*
-	 * Aplicaremos un XOR a una variable (decenascase) la cual
+	 * Limpiamos la configuracion que tiene el dual 7 segmentos antes de
+	 * escribir, ya sea en el 7 segmento derecho o izquierdo.
+	 */
+	gpio_WritePin(&userLed1, RESET);
+	gpio_WritePin(&userLed2, RESET);
+	gpio_WritePin(&userLed3, RESET);
+	gpio_WritePin(&userLed4, RESET);
+	gpio_WritePin(&userLed5, RESET);
+	gpio_WritePin(&userLed6, RESET);
+	gpio_WritePin(&userLed7, RESET);
+
+	/*
+	 * Aplicaremos un XOR a una variable (switch7segment) la cual
 	 * nos ayudará a elegir el caso del switch.
 	 */
-	decenascase ^= 1;
-	gpio_WritePin(&userSwitch, decenascase);
-	gpio_WritePin(&userDir, (~dir0&1));
+	switch7segment ^= 1;
 	/*
-	 * Creamos un switch para que luego con los transistores, esto
-	 * nos genere dos posibles salidas para así tener dos numeros
+	 * Escribimos el valor switch7segment en el pin userSwitch pin que se encarga
+	 * de suichear nuestros transistores para así encender el 7 segmentos
+	 * de la derecha (unidades) o el 7 segmentos izquierdo (decenas)
+	 */
+	gpio_WritePin(&userSwitch, switch7segment);
+	/*
+	 * Creamos un switch para elegir lo que se va a imprimir
+	 * de acuerdo al suicheo hecho anteriormente.
 	 * el derecho las unidades (caso 0)
 	 * y el izquierdo las decenas (caso 1)
 	 */
-	switch (decenascase) {
+	switch (switch7segment) {
 	case 0: {
+		/*
+		 * llamamos a la funcion que nos cambia las variables globales
+		 * para el numero que ingresamos (unidad en este caso)
+		 * y lo imprimimos.
+		 */
 		write7segments(unidad);
 		gpio_WritePin(&userLed1, pinA);
 		gpio_WritePin(&userLed2, pinB);
@@ -249,9 +299,15 @@ void Timer2_Callback(void) {
 		gpio_WritePin(&userLed5, pinE);
 		gpio_WritePin(&userLed6, pinF);
 		gpio_WritePin(&userLed7, pinG);
+
 		break;
 	}
 	case 1: {
+		/*
+		 * llamamos a la funcion que nos cambia las variables globales
+		 * para el numero que ingresamos (unidad en este caso)
+		 * y lo imprimimos.
+		 */
 		write7segments(decena);
 		gpio_WritePin(&userLed1, pinA);
 		gpio_WritePin(&userLed2, pinB);
@@ -279,6 +335,7 @@ void callback_ExtInt3(void) {
 	 * del encoder.
 	 */
 	dir0 ^= 1;
+	gpio_TooglePin(&userDir);
 }
 
 void callback_ExtInt13(void) {
@@ -293,56 +350,29 @@ void callback_ExtInt13(void) {
 	 * debido a sus interrupciones.
 	 * Estos casos estan explicados al inicio con un enum fallido :C
 	 */
+
 	switch (dirResult) {
 	case restaDerecha: {
-		if (unidad == 0) {
-			unidad = 9;
-			if (decena == 0) {
-				decena = 9;
-			} else {
-				decena--;
-			}
-		} else {
-			unidad--;
+		if (numero > 0){
+			resta(&numero);
 		}
 		break;
 	}
 	case sumaDerecha: {
-		if (unidad == 9) {
-			unidad = 0;
-			if (decena == 9) {
-				decena = 0;
-			} else {
-				decena++;
-			}
-		} else {
-			unidad++;
+		if (numero != 99){
+			suma(&numero);
 		}
 		break;
 	}
 	case sumaIzquierda: {
-		if (unidad == 9) {
-			unidad = 0;
-			if (decena == 9) {
-				decena = 0;
-			} else {
-				decena++;
-			}
-		} else {
-			unidad++;
+		if (numero != 99){
+			suma(&numero);
 		}
 		break;
 	}
 	case restaIzquierda: {
-		if (unidad == 0) {
-			unidad = 9;
-			if (decena == 0) {
-				decena = 9;
-			} else {
-				decena--;
-			}
-		} else {
-			unidad--;
+		if (numero > 0){
+			resta(&numero);
 		}
 		break;
 	}
@@ -374,6 +404,15 @@ void write7segments(uint8_t numero) {
 	pinE = (bit1 & bit0n) | (bit2n & bit0n);
 	pinF = bit3 | (bit2 & bit1n) | (bit2 & bit0n) | (bit1n & bit0n);
 	pinG = bit3 | (bit2 ^ bit1) | (bit1 & bit0n);
+}
+// Funcion que suma 1 a la variable que indiquemos como parametro.
+void suma(uint8_t *conteo) {
+	*conteo += 1;
+}
+
+// Funcion que resta 1 a la variable que indiquemos como parametro
+void resta(uint8_t *conteo) {
+	*conteo -= 1;
 }
 
 /*
