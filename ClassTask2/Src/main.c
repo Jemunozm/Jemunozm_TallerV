@@ -168,9 +168,9 @@ int main(void) {
 	userSwitch.pinConfig.GPIO_PinPuPdControl = GPIO_PUPDR_PULLDOWN;
 
 	/* Configuramos el PinB5 */
-	userData.pGPIOx = GPIOB;
-	userData.pinConfig.GPIO_PinNumber = PIN_5;
-	userData.pinConfig.GPIO_PinMode = GPIO_MODE_IN;
+	userData.pGPIOx 						= GPIOB;
+	userData.pinConfig.GPIO_PinNumber 		= PIN_5;
+	userData.pinConfig.GPIO_PinMode 		= GPIO_MODE_IN;
 
 	/* Configuramos el PinB3 */
 	userSWenc.pGPIOx						= GPIOB;
@@ -231,9 +231,6 @@ int main(void) {
 
 	/* Configuramos el EXTI sw que será en la linea 3 */
 	swExti.pGPIOHandler = &userSWenc;
-	swExti.pGPIOHandler->pGPIOx = GPIOB;
-	swExti.pGPIOHandler->pinConfig.GPIO_PinNumber = PIN_3;
-	swExti.pGPIOHandler->pinConfig.GPIO_PinMode = GPIO_MODE_IN;
 	swExti.edgeType = EXTERNAL_INTERRUPT_RISING_EDGE;
 
 	/* Configuramos el EXTI ck que será en la linea 13 */
@@ -346,9 +343,9 @@ void callback_ExtInt13(void) {
 	dirResult = (dir0 << 1) | (dir1 << 0);
 	// verificamos el boton ya que nos indica direccion
 	/*
-	 * Este switch nos da las sposbiles opciones de lectura del encoder
+	 * Este switch nos da las posbiles opciones de lectura del encoder
 	 * debido a sus interrupciones.
-	 * Estos casos estan explicados al inicio con un enum fallido :C
+	 * Estos casos estan explicados al inicio con un enum.
 	 */
 
 	switch (dirResult) {
@@ -384,7 +381,7 @@ void callback_ExtInt13(void) {
 
 /*
  * Funcion que recibe como parametro una variable que
- * contiene un numeroen binario, ara así cambiar unas variables globales
+ * contiene un numero en binario, para así cambiar unas variables globales
  * con las que escribimos los numeros en el 7 segmentos.
  */
 void write7segments(uint8_t numero) {
@@ -396,6 +393,12 @@ void write7segments(uint8_t numero) {
 	bit2n = (~numero >> 2) & 1;
 	bit3 = (numero >> 3) & 1;
 
+	/*
+	 * Esta configuracion de los pines A,B,C,D,E,F,G,que son los leds que
+	 * encienden al encoder, es tomada de un ejemplo en digital donde
+	 * se realizan operasiones logicas de todos lo posibles casos en los
+	 * que se encienda cada led de acuerdo a cada numero.
+	 */
 	pinA = (bit3 | bit1) | ((~(bit0 ^ bit2)) & 1);
 	pinB = bit2n | ((~(bit1 ^ bit0)) & 1);
 	pinC = bit2 | bit1n | bit0;
