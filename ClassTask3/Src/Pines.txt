@@ -1,0 +1,14 @@
+//Definimos los pines que se van a utilizar.
+userLed/Timer 				= PinA5
+userLed1/A					= PinC6
+userLed2/B 					= PinA7
+userLed3/C					= PinC8
+userLed4/D					= PinA9
+userLed5/E					= PinC9
+userLed6/F 					= PinA6
+userLed7/G 					= PinA8
+userDir/LedEstado			= PinB12
+userSwitch/Transistores	 	= PinA10
+userData 					= PinB5
+userSWenc 					= PinB3
+userCKenc 					= PinB13
