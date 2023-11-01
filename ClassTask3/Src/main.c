@@ -56,6 +56,7 @@ USART_Handler_t usart = { 0 };
 uint8_t rxData = 0;
 char bufferData[64] = { 0 };
 char commandBuffer[64] = { 0 };
+char bufferPrint[64] = { 0 };
 
 /*
  * Creación de variables globales para convertir un numero de binario
@@ -88,10 +89,12 @@ uint8_t direccionEncoder = 0;
 uint8_t switch7segment = 0;
 uint8_t resolucionADC = 0;
 uint8_t channelADC = 0;
+uint8_t channelOption = 0;
 uint8_t adcComplete = 0;
 uint8_t receivedChar = 0;
 uint8_t commandFlag = 0;
 uint8_t bandera1 = 0;
+uint8_t programStatus = 0;
 
 
 
@@ -104,6 +107,8 @@ uint8_t isLetter(char caracter);
 uint8_t isNumber(char caracter);
 uint8_t isNotControl(char caracter);
 void analyzeCommand(char *buffer);
+void begin_program(void);
+void stop_program(void);
 
 
 //Creación de un enum con los cuatro posibles casos del encoder y tarea.
@@ -117,14 +122,19 @@ int main(void) {
 	usart_writeMsg(&usart, "Hola mundo \r");
 	while (1) {
 
+		if(programStatus){
+			if(bandera1){
+				adc_StartSingleConv();
+				bandera1 = 0;
+				begin_program();
+			}
+		}else{
+			stop_program();
+		}
 
-//		if(bandera1){
-//			bandera1 = 0;
-//			usart_writeMsg(&usart, "Hola mundo \r");
-//		}
+
 		//Actualizamos dos nuestras variables auxiliares.
 		direccionEncoder = (botonEncoder << 1) | (dataEncoder << 0);
-
 		/*
 		 * Este conjunto me ayuda a identificar que tipo de caracter
 		 * estoy recibiendo y de acuerdo a ello imprimo y ejecuto
@@ -137,6 +147,7 @@ int main(void) {
 			}
 
 			else if (rxData == 0x0D) {
+				usart_writeMsg(&usart, "\n");
 //				strcat(commandBuffer, (char*) &rxData);
 				commandFlag = 1;
 			}
@@ -367,7 +378,7 @@ void initSys(void){
 	//Configuramos el ADC que vamos a usar
 
 	/* Configuramos el ADC 8 */
-	trimmer.channel			= CHANNEL_8;
+	trimmer.channel				= CHANNEL_8;
 	trimmer.resolution			= RESOLUTION_12_BIT;
 	trimmer.dataAlignment		= ALIGNMENT_RIGHT;
 	trimmer.samplingPeriod		= SAMPLING_PERIOD_84_CYCLES;
@@ -467,6 +478,43 @@ void changeChannel(ADC_Config_t *adcConfig, uint8_t channel) {
 	adc_ConfigSingleChannel (adcConfig);
 }
 
+void configTimerPeriod(Timer_Handler_t *timer, uint16_t period) {
+	timer_SetState(&refreshTimer, 0);
+	timer->TIMx_Config.TIMx_Period = period;
+	timer_Config(timer);
+	timer_SetState(&refreshTimer, 1);
+}
+
+uint8_t channelOptions(uint8_t *numero){
+	switch (*numero){
+	case 0:{
+		return 0;
+		break;
+	}
+	case 1:{
+		return 1;
+		break;
+	}
+	case 2:{
+		return 4;
+		break;
+	}
+	default:{
+		return 0;
+		break;
+	}
+	}
+}
+
+void begin_program(void){
+		adc_peripheralOnOff(SET);
+		sprintf(bufferPrint,"El valor del trimmer es %d\n Canal %d\n Resolucion %d\n",trimmer.adcData,trimmer.channel,trimmer.resolution);
+		usart_writeMsg(&usart, bufferPrint);
+}
+void stop_program(void){
+		adc_peripheralOnOff(RESET);
+}
+
 void analyzeCommand(char *buffer){
 
 	if(strcmp(commandBuffer, "help1") == 0){
@@ -476,57 +524,64 @@ void analyzeCommand(char *buffer){
 		usart_writeMsg(&usart, "3)  m 	 -> Se habilita el ADC \n");
 		usart_writeMsg(&usart, "4)  c 	 -> Se habilita el modo continuo \n");
 		usart_writeMsg(&usart, "5)  s	 -> Se desabilita el modo continuo \n");
-		usart_writeMsg(&usart, "6)  ar0  -> Cambiar la resolución a 12bits \n");
-		usart_writeMsg(&usart, "7)  ar1  -> Cambiar la resolución a 10bits \n");
-		usart_writeMsg(&usart, "8)  ar2  -> Cambiar la resolución a 8bits \n");
-		usart_writeMsg(&usart, "9)  ar3  -> Cambiar la resolución a 6bits \n");
-		usart_writeMsg(&usart, "10) ac0  -> Cambiar al canal 1 \n");
-		usart_writeMsg(&usart, "11) ac1  -> Cambiar al canal 2 \n");
-		usart_writeMsg(&usart, "12) ac2  -> Cambiar al canal 3 \n");
-		usart_writeMsg(&usart, "13) ar+  -> Aumentar la resolución \n");
-		usart_writeMsg(&usart, "14) ar-  -> Disminuir la resolución \n");
-		usart_writeMsg(&usart, "15) ac+  -> Subir de canal \n");
-		usart_writeMsg(&usart, "16) ac-  -> Bajar de canal \n");
-		usart_writeMsg(&usart, "17) tr+  -> Aumentar tasa de refresco \n");
-		usart_writeMsg(&usart, "18) tr-  -> Disminuir tasa de refresco \n");
+		usart_writeMsg(&usart, "6) ar+  -> Aumentar la resolución \n");
+		usart_writeMsg(&usart, "7) ar-  -> Disminuir la resolución \n");
+		usart_writeMsg(&usart, "8) ac+  -> Subir de canal \n");
+		usart_writeMsg(&usart, "9) ac-  -> Bajar de canal \n");
+		usart_writeMsg(&usart, "10) tr+  -> Aumentar tasa de refresco \n");
+		usart_writeMsg(&usart, "11) tr-  -> Disminuir tasa de refresco \n");
+		usart_writeMsg(&usart, "11) B  -> Iniciar programa \n");
+		usart_writeMsg(&usart, "11) S  -> Detener programa \n");
 	} else if(strcmp(commandBuffer,"t") == 0){
 		usart_writeMsg(&usart, "Testing, Testing!! \n");
 	} else if(strcmp(commandBuffer,"m") == 0){
 		usart_writeMsg(&usart, "make a simple ADC \n\b\r");
+		adc_StartSingleConv();
 	} else if(strcmp(commandBuffer,"c") == 0){
 		usart_writeMsg(&usart, "Make a continuous ADC \n");
+		adc_StartContinouosConv();
 	} else if(strcmp(commandBuffer,"s") == 0){
 		usart_writeMsg(&usart, "Stop continuous ADC \n");
-	} else if(strcmp(commandBuffer,"ar0") == 0){
-		usart_writeMsg(&usart, "Se cambió la resolución a 12bits \n");
-	} else if(strcmp(commandBuffer,"ar1") == 0){
-		usart_writeMsg(&usart, "Se cambió la resolución a 10bits \n");
-	} else if(strcmp(commandBuffer,"ar2") == 0){
-		usart_writeMsg(&usart, "Se cambió la resolución a 8bits \n");
-	} else if(strcmp(commandBuffer,"ar3") == 0){
-		usart_writeMsg(&usart, "Se cambió la resolución a 6bits \n");
-	} else if(strcmp(commandBuffer,"ac0") == 0){
-		usart_writeMsg(&usart, "Se cambió al canal 1 \n");
-	} else if(strcmp(commandBuffer,"ac1") == 0){
-		usart_writeMsg(&usart, "Se cambió al canal 2 \n");
-	} else if(strcmp(commandBuffer,"ac2") == 0){
-		usart_writeMsg(&usart, "Se cambió al canal 3 \n");
+		adc_StopContinouosConv();
 	} else if(strcmp(commandBuffer,"ar+") == 0){
 		usart_writeMsg(&usart, "Se aumentó la resolución \n");
+		if(resolucionADC > 0){
+			resta(&resolucionADC);
+			changeResolution(&trimmer, resolucionADC);
+		}
 	} else if(strcmp(commandBuffer,"ar-") == 0){
 		usart_writeMsg(&usart, "Se disminuyó la resolución \n");
+		if(resolucionADC <= 3){
+			suma(&resolucionADC);
+			changeResolution(&trimmer, resolucionADC);
+		}
 	} else if(strcmp(commandBuffer,"ac+") == 0){
 		usart_writeMsg(&usart, "Se subió de canal \n");
+		if(channelADC < 2){
+			suma(&channelADC);
+			channelOption = channelOptions(&channelADC);
+			changeChannel(&trimmer, channelOption);
+		}
 	} else if(strcmp(commandBuffer,"ac-") == 0){
 		usart_writeMsg(&usart, "Se bajó de canal \n");
+		if(channelADC > 0){
+			resta(&channelADC);
+			channelOption = channelOptions(&channelADC);
+			changeChannel(&trimmer, channelOption);
+		}
 	} else if(strcmp(commandBuffer,"tr+") == 0){
 		usart_writeMsg(&usart, "Se aumentó la tasa de refresco \n");
 	} else if(strcmp(commandBuffer,"tr-") == 0){
-		usart_writeMsg(&usart, "Se disminuyó latasa de refresco \n");
+		usart_writeMsg(&usart, "Se disminuyó la tasa de refresco \n");
+	} else if(strcmp(commandBuffer,"B") == 0){
+		usart_writeMsg(&usart, "Se inició el programa \n");
+		programStatus = 1;
+	} else if(strcmp(commandBuffer,"S") == 0){
+		usart_writeMsg(&usart, "Se detuvo el programa \n");
+		programStatus = 0;
 	}
 
 }
-
 
 uint8_t isLetter(char caracter) {
 	if ((caracter >= 'A' && caracter <= 'Z')
