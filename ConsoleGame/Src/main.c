@@ -18,24 +18,51 @@
 
 #include <stdint.h>
 
-#define RCC_BASE_ADDRESS
-#define RCC_AHB1ENR_OFFSET
-#define RCC_AHB1ENR
+#define RCC_BASE_ADDRESS 0x40023800
+#define RCC_AHB1ENR_OFFSET 0x30
+#define GPIOA_ADDRES 0x40020000UL
 
-unsigned int ragisterAHB1enb;
+unsigned int RCC_AHB1ENR = 0x40023800UL | 0x30;
+unsigned int *registerAHB1enb;
+
+unsigned int gpioA_Moder = GPIOA_ADDRES;
+unsigned int gpioA_OutRegister = GPIOA_ADDRES | 0x14;
+unsigned int *registerAHB1enb;
+unsigned int *registerMod;
+unsigned int *registerOut;
+int bool = 0;
+
 unsigned int day;
 
+int main(void) {
+	registerAHB1enb = (unsigned int*) RCC_AHB1ENR;
+	unsigned int var = 0;
+	var |= 1;
+	* registerAHB1enb |= var;
 
-int main(void)
-{
-	registerAHB1enb = (unsigned int *)RCC_AHB1ENR;
+	registerMod = (unsigned int*) gpioA_Moder;
+	unsigned int var1 = 0;
+	var1 |= 1 << 10;
+	* registerMod |= var1;
 
+	registerOut = (unsigned int*) gpioA_OutRegister;
+	unsigned int var2 = 0;
 
+	var2 |= 1 << 5;
+	* registerOut |= var2;
+	bool = 1;
 
+	/* Loop forever */
+	while (1) {
+		if(bool){
+			unsigned int aux = ~var2;
+			* registerOut &= (aux);
+			bool= 0;
+		}
+		else{
+			* registerOut |= var2;
+			bool = 1;
+		}
 
-	*registerAHB1enb |= (1<<2);
-    /* Loop forever */
-	while(1){
-		day++;
 	}
 }
