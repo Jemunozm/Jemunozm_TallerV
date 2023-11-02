@@ -78,7 +78,6 @@ void usart_Config(USART_Handler_t *ptrUsartHandler) {
 
 /**/
 static void usart_enable_clock_peripheral(USART_Handler_t *ptrUsartHandler) {
-	/* Lo debemos hacer para cada uno de las posibles opciones que tengamos (USART1, USART2, USART6) */
 	/* 1. Activamos la señal de reloj que viene desde el BUS al que pertenece el periferico */
 	/* Lo debemos hacer para cada uno de las posibles opciones que tengamos (USART1, USART2, USART6) */
 
@@ -193,10 +192,18 @@ static void usart_config_baudrate(USART_Handler_t *ptrUsartHandler) {
 	}
 	case USART_BAUDRATE_19200: {
 		// El valor a cargar es 52.0625 -> Mantiza = 52,fraction = 0.0625
-		// Mantiza = 52 = 0x34, fraction = 16 * 0.1875 = 1
+		// Mantiza = 52 = 0x34, fraction = 16 * 0.0625 = 1
 		// Valor a cargar 0x0341
 		// Configurando el Baudrate generator para una velocidad de 19200bps
 		ptrUsartHandler->ptrUSARTx->BRR = 0x0341;
+		break;
+	}
+	case USART_BAUDRATE_38400: {
+		// El valor a cargar es 26.0625 -> Mantiza = 26,fraction = 0.0625
+		// Mantiza = 26 = 0x1A, fraction = 16 * 0.0625 = 1
+		// Valor a cargar 0x01A1
+		// Configurando el Baudrate generator para una velocidad de 38400bps
+		ptrUsartHandler->ptrUSARTx->BRR = 0x01A1;
 		break;
 	}
 	case USART_BAUDRATE_115200: {
