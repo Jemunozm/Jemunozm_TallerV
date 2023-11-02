@@ -8,8 +8,8 @@
 #ifndef I2C_DRIVER_HAL_H_
 #define I2C_DRIVER_HAL_H_
 
-
-
+#include <stdint.h>
+#include "stm32f4xx.h"
 
 enum{
 	I2C_MODE_SM = 0,
@@ -17,13 +17,13 @@ enum{
 };
 
 enum{
-	I2C_MODE_SM_SPEED_100 = 0,
-	I2C_MODE_FM_SPEED_400
+	I2C_MODE_SM_SPEED_100 = 80,
+	I2C_MODE_FM_SPEED_400 = 13
 };
 
 enum{
-	I2C_MAX_RISE_TIME_SM = 0,
-	I2C_MAX_RISE_TIME_FM
+	I2C_MAX_RISE_TIME_SM = 17,
+	I2C_MAX_RISE_TIME_FM = 5
 };
 
 enum{
@@ -32,12 +32,7 @@ enum{
 };
 
 enum{
-	I2C_OFF = 0,
-	I2C_ON
-};
-
-enum{
-	I2C_CLOCK_FREQUENCY_2 = 0,
+	I2C_CLOCK_FREQUENCY_2 = 2,
 	I2C_CLOCK_FRECUENCY_3,
 	I2C_CLOCK_FRECUENCY_4,
 	I2C_CLOCK_FRECUENCY_5,
@@ -98,7 +93,7 @@ enum{
 
 typedef struct
 {
-	I2C_TypeDef			*ptrI2C;
+	I2C_TypeDef			*ptrI2Cx;
 	uint8_t				slaveAddress;
 	uint8_t				modeI2C;
 	uint8_t				dataI2C;
