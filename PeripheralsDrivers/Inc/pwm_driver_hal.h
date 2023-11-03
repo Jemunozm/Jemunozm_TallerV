@@ -11,13 +11,17 @@
 
 #include "stm32f4xx.h"
 
-#define PWM_CHANNEL_1	0
-#define PWM_CHANNEL_2	1
-#define PWM_CHANNEL_3	2
-#define PWM_CHANNEL_4	3
+enum{
+	PWM_CHANNEL_1 = 0,
+	PWM_CHANNEL_2,
+	PWM_CHANNEL_3,
+	PWM_CHANNEL_4
+};
 
-#define PWM_DUTTY_0_PERCENT		0
-#define PWM_DUTTY_100_PERCENT	100
+enum{
+	PWM_DUTTY_0_PERCENT = 0,
+	PWM_DUTTY_100_PERCENT = 100
+};
 
 /**/
 typedef struct
