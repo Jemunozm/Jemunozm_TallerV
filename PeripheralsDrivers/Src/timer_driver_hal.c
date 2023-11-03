@@ -26,7 +26,7 @@ static void timer_config_interrupt(Timer_Handler_t *pTimerHandler);
  * Debemos configurar y/o utilizar:
  * 	- TIMx_CR1 	(control Register 1)
  * 	- TIMx_SMCR	(slave mode control register) -> mantener en 0 para modo Timer Básico
- * 	- TIMx_DIER (DMA and Interrupt enabler egister)
+ * 	- TIMx_DIER (DMA and Interrupt enable register)
  * 	- TIMx_SR 	(Status register)
  * 	- TIMx_CNT	(Counter)
  * 	- TIMx_PSC	(Pre-scaler)
