@@ -152,8 +152,8 @@ int main(void) {
 	userLed7.pinConfig.GPIO_PinPuPdControl = GPIO_PUPDR_NOTHING;
 
 	/* Configuramos el PinB12 */
-	userDir.pGPIOx = GPIOB;
-	userDir.pinConfig.GPIO_PinNumber = PIN_12;
+	userDir.pGPIOx = GPIOC;
+	userDir.pinConfig.GPIO_PinNumber = PIN_5;
 	userDir.pinConfig.GPIO_PinMode = GPIO_MODE_OUT;
 	userDir.pinConfig.GPIO_PinOutputType = GPIO_OTYPE_PUSHPULL;
 	userDir.pinConfig.GPIO_PinOutputSpeed = GPIO_OSPEED_MEDIUM;
@@ -161,7 +161,7 @@ int main(void) {
 
 	/* Configuramos el PinA10 */
 	userSwitch.pGPIOx = GPIOA;
-	userSwitch.pinConfig.GPIO_PinNumber = PIN_10;
+	userSwitch.pinConfig.GPIO_PinNumber = PIN_0;
 	userSwitch.pinConfig.GPIO_PinMode = GPIO_MODE_OUT;
 	userSwitch.pinConfig.GPIO_PinOutputType = GPIO_OTYPE_PUSHPULL;
 	userSwitch.pinConfig.GPIO_PinOutputSpeed = GPIO_OSPEED_MEDIUM;
@@ -173,14 +173,14 @@ int main(void) {
 	userData.pinConfig.GPIO_PinMode 		= GPIO_MODE_IN;
 
 	/* Configuramos el PinB3 */
-	userSWenc.pGPIOx						= GPIOB;
-	userSWenc.pinConfig.GPIO_PinNumber		= PIN_3;
+	userSWenc.pGPIOx						= GPIOA;
+	userSWenc.pinConfig.GPIO_PinNumber		= PIN_10;
 	userSWenc.pinConfig.GPIO_PinMode		= GPIO_MODE_IN;
 
 	/* Configuramos el PinB13 */
-	userCKenc.pGPIOx = GPIOB;
-	userCKenc.pinConfig.GPIO_PinNumber = PIN_13;
-	userCKenc.pinConfig.GPIO_PinMode = GPIO_MODE_IN;
+	userCKenc.pGPIOx						= GPIOB;
+	userCKenc.pinConfig.GPIO_PinNumber 		= PIN_3;
+	userCKenc.pinConfig.GPIO_PinMode 		= GPIO_MODE_IN;
 
 	//Cargamos la configuracion  en los registros que gobiernan el puerto.
 	gpio_Config(&userLed);
@@ -225,9 +225,6 @@ int main(void) {
 	timer_SetState(&displayTimer, TIMER_ON);
 
 	//Configuramos las interrupciones externas (EXTI)
-	userSWenc.pGPIOx						= GPIOB;
-	userSWenc.pinConfig.GPIO_PinNumber		= PIN_3;
-	userSWenc.pinConfig.GPIO_PinMode		= GPIO_MODE_IN;
 
 	/* Configuramos el EXTI sw que será en la linea 3 */
 	swExti.pGPIOHandler = &userSWenc;
@@ -325,7 +322,7 @@ void Timer4_Callback(void) {
 	gpio_TooglePin(&userLed);
 }
 
-void callback_ExtInt3(void) {
+void callback_ExtInt10(void) {
 	/*
 	 * Cada vez que presionamos el boton asociado a esta interrupción
 	 * hacemos un XOR para así cambiar el estado y asu vez la dirección
@@ -335,7 +332,7 @@ void callback_ExtInt3(void) {
 	gpio_TooglePin(&userDir);
 }
 
-void callback_ExtInt13(void) {
+void callback_ExtInt3(void) {
 	//almacenamos la informacion recibida por los datos
 	dir1 = gpio_ReadPin(&userData);
 

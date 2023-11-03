@@ -42,8 +42,8 @@ Timer_Handler_t refreshTimer 	= { 0 }; // Timer para refrescar la impresión.
 
 
 //Definimos las lineas EXTI que vamos a utilizar.
-EXTI_Config_t swExti = { 0 }; //Exti linea 3 para el sw del encoder.
-EXTI_Config_t ckExti = { 0 }; //Exti linea 13 para el ck del enconder.
+EXTI_Config_t swExti = { 0 }; //Exti linea 10 para el sw del encoder.
+EXTI_Config_t ckExti = { 0 }; //Exti linea 3 para el ck del enconder.
 
 
 //Definimos el ADC que vamos a utilizar.
@@ -236,8 +236,8 @@ void initSys(void){
 	userLed7.pinConfig.GPIO_PinPuPdControl = GPIO_PUPDR_NOTHING;
 
 	/* Configuramos el PinB12 */
-	userDir.pGPIOx = GPIOB;
-	userDir.pinConfig.GPIO_PinNumber = PIN_12;
+	userDir.pGPIOx = GPIOC;
+	userDir.pinConfig.GPIO_PinNumber = PIN_5;
 	userDir.pinConfig.GPIO_PinMode = GPIO_MODE_OUT;
 	userDir.pinConfig.GPIO_PinOutputType = GPIO_OTYPE_PUSHPULL;
 	userDir.pinConfig.GPIO_PinOutputSpeed = GPIO_OSPEED_MEDIUM;
@@ -245,7 +245,7 @@ void initSys(void){
 
 	/* Configuramos el PinA10 */
 	userSwitch.pGPIOx = GPIOA;
-	userSwitch.pinConfig.GPIO_PinNumber = PIN_10;
+	userSwitch.pinConfig.GPIO_PinNumber = PIN_0;
 	userSwitch.pinConfig.GPIO_PinMode = GPIO_MODE_OUT;
 	userSwitch.pinConfig.GPIO_PinOutputType = GPIO_OTYPE_PUSHPULL;
 	userSwitch.pinConfig.GPIO_PinOutputSpeed = GPIO_OSPEED_MEDIUM;
@@ -257,14 +257,14 @@ void initSys(void){
 	userData.pinConfig.GPIO_PinMode 		= GPIO_MODE_IN;
 
 	/* Configuramos el PinB3 */
-	userSWenc.pGPIOx						= GPIOB;
-	userSWenc.pinConfig.GPIO_PinNumber		= PIN_3;
+	userSWenc.pGPIOx						= GPIOA;
+	userSWenc.pinConfig.GPIO_PinNumber		= PIN_10;
 	userSWenc.pinConfig.GPIO_PinMode		= GPIO_MODE_IN;
 
 	/* Configuramos el PinB13 */
-	userCKenc.pGPIOx = GPIOB;
-	userCKenc.pinConfig.GPIO_PinNumber = PIN_13;
-	userCKenc.pinConfig.GPIO_PinMode = GPIO_MODE_IN;
+	userCKenc.pGPIOx 						= GPIOB;
+	userCKenc.pinConfig.GPIO_PinNumber 		= PIN_3;
+	userCKenc.pinConfig.GPIO_PinMode 		= GPIO_MODE_IN;
 
 	/* Configuramos el PinA2*/
 	userTRusart.pGPIOx = GPIOA;
@@ -343,11 +343,6 @@ void initSys(void){
 
 	//Configuramos las interrupciones externas (EXTI)
 
-
-	userSWenc.pGPIOx						= GPIOB;
-	userSWenc.pinConfig.GPIO_PinNumber		= PIN_3;
-	userSWenc.pinConfig.GPIO_PinMode		= GPIO_MODE_IN;
-
 	/* Configuramos el EXTI sw que será en la linea 3 */
 	swExti.pGPIOHandler = &userSWenc;
 	swExti.edgeType = EXTERNAL_INTERRUPT_RISING_EDGE;
@@ -387,45 +382,6 @@ void initSys(void){
 
 	//Encedemos el LED que nos indica que estamos en modo Directo.
 	gpio_WritePin(&userDir, SET);
-}
-
-void Timer2_Callback(void) {
-	switch7segment = 1;
-}
-
-void Timer4_Callback(void) {
-	gpio_TooglePin(&userLed);
-}
-
-void Timer10_Callback(void){
-	bandera1 = 1;
-}
-
-void callback_ExtInt3(void) {
-	/*
-	 * Cada vez que presionamos el boton asociado a esta interrupción
-	 * hacemos un XOR para así cambiar el estado y asu vez la dirección
-	 * del encoder.
-	 */
-	botonEncoder ^= 1;
-	gpio_TooglePin(&userDir);
-}
-
-void callback_ExtInt13(void) {
-	//almacenamos la informacion recibida por los datos
-	dataEncoder = gpio_ReadPin(&userData);
-
-	//Actualizamos la variable que nos dará la direccion de conteo para los casos.
-	direccionEncoder = (botonEncoder << 1) | (dataEncoder << 0);
-}
-
-void usart2_RxCallback(void){
-	rxData = usart_getRxData2();
-}
-
-void adc_CompleteCallback (void){
-	adcComplete = 1;
-	trimmer.adcData = adc_GetValue();
 }
 /*
  * Funcion que recibe como parametro una variable que
@@ -604,6 +560,47 @@ uint8_t isNotControl(char caracter){
 	}
 	return 0;
 }
+
+
+void Timer2_Callback(void) {
+	switch7segment = 1;
+}
+
+void Timer4_Callback(void) {
+	gpio_TooglePin(&userLed);
+}
+
+void Timer10_Callback(void){
+	bandera1 = 1;
+}
+
+void callback_ExtInt10(void) {
+	/*
+	 * Cada vez que presionamos el boton asociado a esta interrupción
+	 * hacemos un XOR para así cambiar el estado y asu vez la dirección
+	 * del encoder.
+	 */
+	botonEncoder ^= 1;
+	gpio_TooglePin(&userDir);
+}
+
+void callback_ExtInt3(void) {
+	//almacenamos la informacion recibida por los datos
+	dataEncoder = gpio_ReadPin(&userData);
+
+	//Actualizamos la variable que nos dará la direccion de conteo para los casos.
+	direccionEncoder = (botonEncoder << 1) | (dataEncoder << 0);
+}
+
+void usart2_RxCallback(void){
+	rxData = usart_getRxData2();
+}
+
+void adc_CompleteCallback (void){
+	adcComplete = 1;
+	trimmer.adcData = adc_GetValue();
+}
+
 /*
  * Esta función sirve para detectar problemas de parametros
  * incorrectos al momento de ejecutar un programa.
