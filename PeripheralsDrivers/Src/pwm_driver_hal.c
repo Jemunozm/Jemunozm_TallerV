@@ -5,24 +5,42 @@
  *      Author: imjeviz
  */
 
+#include "stm32f4xx.h"
 #include "pwm_driver_hal.h"
 
 /**/
+// === Headers for private functions ===
+static void pwm_enable_clock_peripheral(PWM_Handler_t *ptrPwmHandler);
+static void pwm_set_prescaler(PWM_Handler_t *ptrPwmHandler);
+static void pwm_set_period(PWM_Handler_t *ptrPwmHandler);
+static void pwm_set_mode(PWM_Handler_t *ptrPwmHandler);
+static void pwm_config_duttyCicle(PWM_Handler_t *ptrPwmHandler);
+
+/* Función en la que cargamos la configuración del Timer
+ * Recordar que siempre se debe comenzar con activar la señal de reloj
+ * del periférico que se está utilizando.
+ * Además, en este caso, debemos ser cuidadosos al momento de utilizar las interrupciones.
+ * Los timer están conectadors directamente al elemento NVIC del cortex-Mx
+ * Debemos configurar y/o utilizar:
+ * 	- TIMx_CR1 	(control Register 1)
+ * 	- TIMx_SMCR	(slave mode control register) -> mantener en 0 para modo Timer Básico
+ * 	- TIMx_DIER (DMA and Interrupt enable register)
+ * 	- TIMx_SR 	(Status register)
+ * 	- TIMx_CNT	(Counter)
+ * 	- TIMx_PSC	(Pre-scaler)
+ * 	- TIMx_ARR	(Auto-reload register)
+ *
+ * 	Como vamos a trabajar con iterrupciones, antes de configurar una nueva,debemos desactivar
+ * 	el sistema global de interrupciones, activar la IRQ específica y luego volver a encender
+ * 	el sistema.
+ */
+
 void pwm_Config(PWM_Handler_t *ptrPwmHandler){
 
-	/* 1. Activar la señal de reloj del periférico requerido */
-	if(ptrPwmHandler->ptrTIMx == TIM2){
-		/* agregue acá su código */
-	}
-	else if(ptrPwmHandler->ptrTIMx == TIM3){
-		/* agregue acá su código */
-	}
-	/*... agregar los demas*/
-	else{
-		__NOP();
-	}
+	// 1. Activar la señal de reloj del periférico requerido.
+	pwm_enable_clock_peripheral(ptrPwmHandler);
 
-	/* 1. Cargamos la frecuencia deseada */
+	/* 1a. Cargamos la frecuencia deseada */
 	setFrequency(ptrPwmHandler);
 
 	/* 2. Cargamos el valor del dutty-Cycle*/
@@ -76,6 +94,36 @@ void pwm_Config(PWM_Handler_t *ptrPwmHandler){
 	}// fin del switch-case
 }
 
+void pwm_enable_clock_peripheral(PWM_Handler_t *ptrPwmHandler){
+
+
+	if(ptrPwmHandler->ptrTIMx == TIM2){
+		RCC->APB1ENR |= RCC_APB1ENR_TIM2EN;
+	}
+	else if(ptrPwmHandler->ptrTIMx == TIM3){
+		RCC->APB1ENR |= RCC_APB1ENR_TIM3EN;
+	}
+	else if(ptrPwmHandler->ptrTIMx == TIM4){
+		RCC->APB1ENR |= RCC_APB1ENR_TIM4EN;
+	}
+	else if(ptrPwmHandler->ptrTIMx == TIM5){
+		RCC->APB1ENR |= RCC_APB1ENR_TIM5EN;
+	}
+	else if(ptrPwmHandler->ptrTIMx == TIM9){
+		RCC->APB2ENR |= RCC_APB2ENR_TIM9EN;
+	}
+	else if(ptrPwmHandler->ptrTIMx == TIM10){
+		RCC->APB2ENR |= RCC_APB2ENR_TIM10EN;
+	}
+	else if(ptrPwmHandler->ptrTIMx == TIM11){
+		RCC->APB2ENR |= RCC_APB2ENR_TIM11EN;
+	}
+	else{
+		__NOP();
+	}
+}
+
+
 /* Función para activar el Timer y activar todo el módulo PWM */
 void startPwmSignal(PWM_Handler_t *ptrPwmHandler) {
 	/* agregue acá su código */
@@ -112,11 +160,11 @@ void setFrequency(PWM_Handler_t *ptrPwmHandler){
 
 	// Cargamos el valor del prescaler, nos define la velocidad (en ns) a la cual
 	// se incrementa el Timer
-	/* agregue acá su código */
+	ptrPwmHandler->ptrTIMx->PSC = ptrPwmHandler->config.prescaler - 1;
 
 	// Cargamos el valor del ARR, el cual es el límite de incrementos del Timer
 	// antes de hacer un update y reload.
-	/* agregue acá su código */
+	ptrPwmHandler->ptrTIMx->ARR = ptrPwmHandler->config.periodo - 1;
 }
 
 
@@ -135,6 +183,24 @@ void setDuttyCycle(PWM_Handler_t *ptrPwmHandler){
 	// Seleccionamos el canal para configurar su dutty
 	switch(ptrPwmHandler->config.channel){
 	case PWM_CHANNEL_1:{
+		ptrPwmHandler->ptrTIMx->CCR1 = ptrPwmHandler->config.duttyCicle;
+
+		break;
+	}
+
+	case PWM_CHANNEL_2:{
+		ptrPwmHandler->ptrTIMx->CCR1 = ptrPwmHandler->config.duttyCicle;
+
+		break;
+	}
+
+	case PWM_CHANNEL_3:{
+		ptrPwmHandler->ptrTIMx->CCR1 = ptrPwmHandler->config.duttyCicle;
+
+		break;
+	}
+
+	case PWM_CHANNEL_4:{
 		ptrPwmHandler->ptrTIMx->CCR1 = ptrPwmHandler->config.duttyCicle;
 
 		break;
