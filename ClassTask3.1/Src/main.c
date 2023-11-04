@@ -18,20 +18,20 @@
 
 //Definimos los pines que se van a utilizar.
 GPIO_Handler_t userLed 		= { 0 }; // PinA5
-GPIO_Handler_t userLed1 	= { 0 }; // PinC6
-GPIO_Handler_t userLed2 	= { 0 }; // PinA7
-GPIO_Handler_t userLed3 	= { 0 }; // PinC8
-GPIO_Handler_t userLed4 	= { 0 }; // PinA9
-GPIO_Handler_t userLed5 	= { 0 }; // PinC9
-GPIO_Handler_t userLed6 	= { 0 }; // PinA7
-GPIO_Handler_t userLed7 	= { 0 }; // PinA8
+GPIO_Handler_t userLedA 	= { 0 }; // PinC6
+GPIO_Handler_t userLedB 	= { 0 }; // PinA7
+GPIO_Handler_t userLedC 	= { 0 }; // PinC8
+GPIO_Handler_t userLedD 	= { 0 }; // PinA9
+GPIO_Handler_t userLedE 	= { 0 }; // PinC9
+GPIO_Handler_t userLedF 	= { 0 }; // PinA7
+GPIO_Handler_t userLedG 	= { 0 }; // PinA8
 GPIO_Handler_t userDir 		= { 0 }; // PinB12
 GPIO_Handler_t userSwitch 	= { 0 }; // PinA10
 GPIO_Handler_t userData 	= { 0 }; // PinB5
-GPIO_Handler_t userSWenc 	= { 0 }; // PinB3
-GPIO_Handler_t userCKenc 	= { 0 }; // PinB13
-GPIO_Handler_t userTRusart	= { 0 };
-GPIO_Handler_t userRXusart	= { 0 };
+GPIO_Handler_t userSWenc 	= { 0 }; // PinA10
+GPIO_Handler_t userCKenc 	= { 0 }; // PinB3
+GPIO_Handler_t userTXusart	= { 0 }; // PA11
+GPIO_Handler_t userRXusart	= { 0 }; // PA12
 
 
 
@@ -48,8 +48,6 @@ EXTI_Config_t ckExti = { 0 }; //Exti linea 3 para el ck del enconder.
 
 //Definimos el ADC que vamos a utilizar.
 ADC_Config_t trimmer = {0};
-//ADC_Config_t trimmer2 = {0};
-//ADC_Config_t trimmer3 = {0};
 
 //Definimos el pin USART que vamos a utilizar.
 USART_Handler_t usart = { 0 };
@@ -57,21 +55,6 @@ uint8_t rxData = 0;
 char bufferData[64] = { 0 };
 char commandBuffer[64] = { 0 };
 char bufferPrint[64] = { 0 };
-
-/*
- * Creación de variables globales para convertir un numero de binario
- * a un numero de 7 segmentos.
- * Teniendo en cuenta una configuración antes vista (primeras semanas de clase)
- */
-
-// Variables de los bits que se encienden para generar cada numero del 0 al 9
-uint8_t bit0 = 0;
-uint8_t bit0n = 0;
-uint8_t bit1 = 0;
-uint8_t bit1n = 0;
-uint8_t bit2 = 0;
-uint8_t bit2n = 0;
-uint8_t bit3 = 0;
 
 // Variables de cada led del 7 segmento.
 uint8_t pinA = 0;
@@ -96,8 +79,6 @@ uint8_t commandFlag = 0;
 uint8_t bandera1 = 0;
 uint8_t programStatus = 0;
 
-
-
 //llamamos las funciones definidas al final del codigo
 void initSys(void);
 void write7segments(uint8_t numero);
@@ -109,7 +90,6 @@ uint8_t isNotControl(char caracter);
 void analyzeCommand(char *buffer);
 void begin_program(void);
 void stop_program(void);
-
 
 //Creación de un enum con los cuatro posibles casos del encoder y tarea.
 
@@ -180,60 +160,60 @@ void initSys(void){
 	userLed.pinConfig.GPIO_PinPuPdControl = GPIO_PUPDR_NOTHING;
 
 	/* Configuramos el PinC6 */
-	userLed1.pGPIOx = GPIOC;
-	userLed1.pinConfig.GPIO_PinNumber = PIN_6;
-	userLed1.pinConfig.GPIO_PinMode = GPIO_MODE_OUT;
-	userLed1.pinConfig.GPIO_PinOutputType = GPIO_OTYPE_PUSHPULL;
-	userLed1.pinConfig.GPIO_PinOutputSpeed = GPIO_OSPEED_MEDIUM;
-	userLed1.pinConfig.GPIO_PinPuPdControl = GPIO_PUPDR_NOTHING;
+	userLedA.pGPIOx = GPIOC;
+	userLedA.pinConfig.GPIO_PinNumber = PIN_6;
+	userLedA.pinConfig.GPIO_PinMode = GPIO_MODE_OUT;
+	userLedA.pinConfig.GPIO_PinOutputType = GPIO_OTYPE_PUSHPULL;
+	userLedA.pinConfig.GPIO_PinOutputSpeed = GPIO_OSPEED_MEDIUM;
+	userLedA.pinConfig.GPIO_PinPuPdControl = GPIO_PUPDR_NOTHING;
 
 	/* Configuramos el PinA7 */
-	userLed2.pGPIOx = GPIOA;
-	userLed2.pinConfig.GPIO_PinNumber = PIN_7;
-	userLed2.pinConfig.GPIO_PinMode = GPIO_MODE_OUT;
-	userLed2.pinConfig.GPIO_PinOutputType = GPIO_OTYPE_PUSHPULL;
-	userLed2.pinConfig.GPIO_PinOutputSpeed = GPIO_OSPEED_MEDIUM;
-	userLed2.pinConfig.GPIO_PinPuPdControl = GPIO_PUPDR_NOTHING;
+	userLedB.pGPIOx = GPIOA;
+	userLedB.pinConfig.GPIO_PinNumber = PIN_7;
+	userLedB.pinConfig.GPIO_PinMode = GPIO_MODE_OUT;
+	userLedB.pinConfig.GPIO_PinOutputType = GPIO_OTYPE_PUSHPULL;
+	userLedB.pinConfig.GPIO_PinOutputSpeed = GPIO_OSPEED_MEDIUM;
+	userLedB.pinConfig.GPIO_PinPuPdControl = GPIO_PUPDR_NOTHING;
 
 	/* Configuramos el PinC8 */
-	userLed3.pGPIOx = GPIOC;
-	userLed3.pinConfig.GPIO_PinNumber = PIN_8;
-	userLed3.pinConfig.GPIO_PinMode = GPIO_MODE_OUT;
-	userLed3.pinConfig.GPIO_PinOutputType = GPIO_OTYPE_PUSHPULL;
-	userLed3.pinConfig.GPIO_PinOutputSpeed = GPIO_OSPEED_MEDIUM;
-	userLed3.pinConfig.GPIO_PinPuPdControl = GPIO_PUPDR_NOTHING;
+	userLedC.pGPIOx = GPIOC;
+	userLedC.pinConfig.GPIO_PinNumber = PIN_8;
+	userLedC.pinConfig.GPIO_PinMode = GPIO_MODE_OUT;
+	userLedC.pinConfig.GPIO_PinOutputType = GPIO_OTYPE_PUSHPULL;
+	userLedC.pinConfig.GPIO_PinOutputSpeed = GPIO_OSPEED_MEDIUM;
+	userLedC.pinConfig.GPIO_PinPuPdControl = GPIO_PUPDR_NOTHING;
 
 	/* Configuramos el PinA9 */
-	userLed4.pGPIOx = GPIOA;
-	userLed4.pinConfig.GPIO_PinNumber = PIN_9;
-	userLed4.pinConfig.GPIO_PinMode = GPIO_MODE_OUT;
-	userLed4.pinConfig.GPIO_PinOutputType = GPIO_OTYPE_PUSHPULL;
-	userLed4.pinConfig.GPIO_PinOutputSpeed = GPIO_OSPEED_MEDIUM;
-	userLed4.pinConfig.GPIO_PinPuPdControl = GPIO_PUPDR_NOTHING;
+	userLedD.pGPIOx = GPIOA;
+	userLedD.pinConfig.GPIO_PinNumber = PIN_9;
+	userLedD.pinConfig.GPIO_PinMode = GPIO_MODE_OUT;
+	userLedD.pinConfig.GPIO_PinOutputType = GPIO_OTYPE_PUSHPULL;
+	userLedD.pinConfig.GPIO_PinOutputSpeed = GPIO_OSPEED_MEDIUM;
+	userLedD.pinConfig.GPIO_PinPuPdControl = GPIO_PUPDR_NOTHING;
 
 	/* Configuramos el PinC9 */
-	userLed5.pGPIOx = GPIOC;
-	userLed5.pinConfig.GPIO_PinNumber = PIN_9;
-	userLed5.pinConfig.GPIO_PinMode = GPIO_MODE_OUT;
-	userLed5.pinConfig.GPIO_PinOutputType = GPIO_OTYPE_PUSHPULL;
-	userLed5.pinConfig.GPIO_PinOutputSpeed = GPIO_OSPEED_MEDIUM;
-	userLed5.pinConfig.GPIO_PinPuPdControl = GPIO_PUPDR_NOTHING;
+	userLedE.pGPIOx = GPIOC;
+	userLedE.pinConfig.GPIO_PinNumber = PIN_9;
+	userLedE.pinConfig.GPIO_PinMode = GPIO_MODE_OUT;
+	userLedE.pinConfig.GPIO_PinOutputType = GPIO_OTYPE_PUSHPULL;
+	userLedE.pinConfig.GPIO_PinOutputSpeed = GPIO_OSPEED_MEDIUM;
+	userLedE.pinConfig.GPIO_PinPuPdControl = GPIO_PUPDR_NOTHING;
 
 	/* Configuramos el PinA6 */
-	userLed6.pGPIOx = GPIOA;
-	userLed6.pinConfig.GPIO_PinNumber = PIN_6;
-	userLed6.pinConfig.GPIO_PinMode = GPIO_MODE_OUT;
-	userLed6.pinConfig.GPIO_PinOutputType = GPIO_OTYPE_PUSHPULL;
-	userLed6.pinConfig.GPIO_PinOutputSpeed = GPIO_OSPEED_MEDIUM;
-	userLed6.pinConfig.GPIO_PinPuPdControl = GPIO_PUPDR_NOTHING;
+	userLedF.pGPIOx = GPIOA;
+	userLedF.pinConfig.GPIO_PinNumber = PIN_6;
+	userLedF.pinConfig.GPIO_PinMode = GPIO_MODE_OUT;
+	userLedF.pinConfig.GPIO_PinOutputType = GPIO_OTYPE_PUSHPULL;
+	userLedF.pinConfig.GPIO_PinOutputSpeed = GPIO_OSPEED_MEDIUM;
+	userLedF.pinConfig.GPIO_PinPuPdControl = GPIO_PUPDR_NOTHING;
 
 	/* Configuramos el PinA8 */
-	userLed7.pGPIOx = GPIOA;
-	userLed7.pinConfig.GPIO_PinNumber = PIN_8;
-	userLed7.pinConfig.GPIO_PinMode = GPIO_MODE_OUT;
-	userLed7.pinConfig.GPIO_PinOutputType = GPIO_OTYPE_PUSHPULL;
-	userLed7.pinConfig.GPIO_PinOutputSpeed = GPIO_OSPEED_MEDIUM;
-	userLed7.pinConfig.GPIO_PinPuPdControl = GPIO_PUPDR_NOTHING;
+	userLedG.pGPIOx = GPIOA;
+	userLedG.pinConfig.GPIO_PinNumber = PIN_8;
+	userLedG.pinConfig.GPIO_PinMode = GPIO_MODE_OUT;
+	userLedG.pinConfig.GPIO_PinOutputType = GPIO_OTYPE_PUSHPULL;
+	userLedG.pinConfig.GPIO_PinOutputSpeed = GPIO_OSPEED_MEDIUM;
+	userLedG.pinConfig.GPIO_PinPuPdControl = GPIO_PUPDR_NOTHING;
 
 	/* Configuramos el PinB12 */
 	userDir.pGPIOx = GPIOC;
@@ -267,13 +247,13 @@ void initSys(void){
 	userCKenc.pinConfig.GPIO_PinMode 		= GPIO_MODE_IN;
 
 	/* Configuramos el PinA2*/
-	userTRusart.pGPIOx = GPIOA;
-	userTRusart.pinConfig.GPIO_PinNumber = PIN_2;
-	userTRusart.pinConfig.GPIO_PinMode = GPIO_MODE_ALFTN;
-	userTRusart.pinConfig.GPIO_PinOutputType = GPIO_OTYPE_PUSHPULL;
-	userTRusart.pinConfig.GPIO_PinOutputSpeed = GPIO_OSPEED_MEDIUM;
-	userTRusart.pinConfig.GPIO_PinPuPdControl = GPIO_PUPDR_NOTHING;
-	userTRusart.pinConfig.GPIO_PinAltFunMode = AF7;
+	userTXusart.pGPIOx = GPIOA;
+	userTXusart.pinConfig.GPIO_PinNumber = PIN_2;
+	userTXusart.pinConfig.GPIO_PinMode = GPIO_MODE_ALFTN;
+	userTXusart.pinConfig.GPIO_PinOutputType = GPIO_OTYPE_PUSHPULL;
+	userTXusart.pinConfig.GPIO_PinOutputSpeed = GPIO_OSPEED_MEDIUM;
+	userTXusart.pinConfig.GPIO_PinPuPdControl = GPIO_PUPDR_NOTHING;
+	userTXusart.pinConfig.GPIO_PinAltFunMode = AF7;
 
 	/* Configuramos el PinA3*/
 	userRXusart.pGPIOx = GPIOA;
@@ -286,20 +266,20 @@ void initSys(void){
 
 	//Cargamos la configuracion  en los registros que gobiernan el puerto.
 	gpio_Config(&userLed);
-	gpio_Config(&userLed1);
-	gpio_Config(&userLed2);
-	gpio_Config(&userLed3);
-	gpio_Config(&userLed4);
-	gpio_Config(&userLed5);
-	gpio_Config(&userLed6);
-	gpio_Config(&userLed7);
+	gpio_Config(&userLedA);
+	gpio_Config(&userLedB);
+	gpio_Config(&userLedC);
+	gpio_Config(&userLedD);
+	gpio_Config(&userLedE);
+	gpio_Config(&userLedF);
+	gpio_Config(&userLedG);
 	gpio_Config(&userDir);
 	gpio_Config(&userSwitch);
 	gpio_Config(&userData);
 	gpio_Config(&userSWenc);
 	gpio_Config(&userCKenc);
 	gpio_Config(&userRXusart);
-	gpio_Config(&userTRusart);
+	gpio_Config(&userTXusart);
 
 	//Encendemos el led que nos indica que se cargaron las configuraciones
 	gpio_WritePin(&userLed, SET);
@@ -389,6 +369,16 @@ void initSys(void){
  * con las que escribimos los numeros en el 7 segmentos.
  */
 void write7segments(uint8_t numero) {
+
+	// Variables de los bits que se encienden para generar cada numero del 0 al 9
+	uint8_t bit0 = 0;
+	uint8_t bit0n = 0;
+	uint8_t bit1 = 0;
+	uint8_t bit1n = 0;
+	uint8_t bit2 = 0;
+	uint8_t bit2n = 0;
+	uint8_t bit3 = 0;
+
 	bit0 = (numero >> 0) & 1;
 	bit0n = (~numero >> 0) & 1;
 	bit1 = (numero >> 1) & 1;
@@ -444,19 +434,19 @@ void configTimerPeriod(Timer_Handler_t *timer, uint16_t period) {
 uint8_t channelOptions(uint8_t *numero){
 	switch (*numero){
 	case 0:{
-		return 0;
+		return 8;
 		break;
 	}
 	case 1:{
-		return 1;
+		return 10;
 		break;
 	}
 	case 2:{
-		return 4;
+		return 11;
 		break;
 	}
 	default:{
-		return 0;
+		return 8;
 		break;
 	}
 	}
@@ -486,8 +476,8 @@ void analyzeCommand(char *buffer){
 		usart_writeMsg(&usart, "9) ac-  -> Bajar de canal \n");
 		usart_writeMsg(&usart, "10) tr+  -> Aumentar tasa de refresco \n");
 		usart_writeMsg(&usart, "11) tr-  -> Disminuir tasa de refresco \n");
-		usart_writeMsg(&usart, "11) B  -> Iniciar programa \n");
-		usart_writeMsg(&usart, "11) S  -> Detener programa \n");
+		usart_writeMsg(&usart, "11) S  -> Iniciar programa \n");
+		usart_writeMsg(&usart, "11) E  -> Detener programa \n");
 	} else if(strcmp(commandBuffer,"t") == 0){
 		usart_writeMsg(&usart, "Testing, Testing!! \n");
 	} else if(strcmp(commandBuffer,"m") == 0){
@@ -529,10 +519,10 @@ void analyzeCommand(char *buffer){
 		usart_writeMsg(&usart, "Se aumentó la tasa de refresco \n");
 	} else if(strcmp(commandBuffer,"tr-") == 0){
 		usart_writeMsg(&usart, "Se disminuyó la tasa de refresco \n");
-	} else if(strcmp(commandBuffer,"B") == 0){
+	} else if(strcmp(commandBuffer,"S") == 0){
 		usart_writeMsg(&usart, "Se inició el programa \n");
 		programStatus = 1;
-	} else if(strcmp(commandBuffer,"S") == 0){
+	} else if(strcmp(commandBuffer,"E") == 0){
 		usart_writeMsg(&usart, "Se detuvo el programa \n");
 		programStatus = 0;
 	}
