@@ -15,39 +15,34 @@
 #include "adc_driver_hal.h"
 #include "usart_driver_hal.h"
 
-
 //Definimos los pines que se van a utilizar.
-GPIO_Handler_t userLed 		= { 0 }; // PinA5
-GPIO_Handler_t userLedA 	= { 0 }; // PinC6
-GPIO_Handler_t userLedB 	= { 0 }; // PinA7
-GPIO_Handler_t userLedC 	= { 0 }; // PinC8
-GPIO_Handler_t userLedD 	= { 0 }; // PinA9
-GPIO_Handler_t userLedE 	= { 0 }; // PinC9
-GPIO_Handler_t userLedF 	= { 0 }; // PinA7
-GPIO_Handler_t userLedG 	= { 0 }; // PinA8
-GPIO_Handler_t userDir 		= { 0 }; // PinB12
-GPIO_Handler_t userSwitch 	= { 0 }; // PinA10
-GPIO_Handler_t userData 	= { 0 }; // PinB5
-GPIO_Handler_t userSWenc 	= { 0 }; // PinA10
-GPIO_Handler_t userCKenc 	= { 0 }; // PinB3
-GPIO_Handler_t userTXusart	= { 0 }; // PA11
-GPIO_Handler_t userRXusart	= { 0 }; // PA12
-
-
+GPIO_Handler_t userLed = { 0 }; // PinA5
+GPIO_Handler_t userLedA = { 0 }; // PinC6
+GPIO_Handler_t userLedB = { 0 }; // PinA7
+GPIO_Handler_t userLedC = { 0 }; // PinC8
+GPIO_Handler_t userLedD = { 0 }; // PinA9
+GPIO_Handler_t userLedE = { 0 }; // PinC9
+GPIO_Handler_t userLedF = { 0 }; // PinA7
+GPIO_Handler_t userLedG = { 0 }; // PinA8
+GPIO_Handler_t userDir = { 0 }; // PinB12
+GPIO_Handler_t userSwitch = { 0 }; // PinA10
+GPIO_Handler_t userData = { 0 }; // PinB5
+GPIO_Handler_t userSWenc = { 0 }; // PinA10
+GPIO_Handler_t userCKenc = { 0 }; // PinB3
+GPIO_Handler_t userTXusart = { 0 }; // PA11
+GPIO_Handler_t userRXusart = { 0 }; // PA12
 
 //Definimos los timers que se emplearan.
-Timer_Handler_t blinkTimer 		= { 0 }; // Timer para el blinky PinA5.
-Timer_Handler_t displayTimer 	= { 0 }; // Timer para el 7-segmentos.
-Timer_Handler_t refreshTimer 	= { 0 }; // Timer para refrescar la impresión.
-
+Timer_Handler_t blinkTimer = { 0 }; // Timer para el blinky PinA5.
+Timer_Handler_t displayTimer = { 0 }; // Timer para el 7-segmentos.
+Timer_Handler_t refreshTimer = { 0 }; // Timer para refrescar la impresión.
 
 //Definimos las lineas EXTI que vamos a utilizar.
 EXTI_Config_t swExti = { 0 }; //Exti linea 10 para el sw del encoder.
 EXTI_Config_t ckExti = { 0 }; //Exti linea 3 para el ck del enconder.
 
-
 //Definimos el ADC que vamos a utilizar.
-ADC_Config_t trimmer = {0};
+ADC_Config_t trimmer = { 0 };
 
 //Definimos el pin USART que vamos a utilizar.
 USART_Handler_t usart = { 0 };
@@ -103,17 +98,11 @@ uint8_t resolutionOptions(uint8_t *numero);
 //Creación de un enum con los cuatro posibles casos del encoder y tarea.
 
 enum {
-	restaChannel = 0,
-	sumaChannel,
-	restaResolucion,
-	sumaResolucion
+	restaChannel = 0, sumaChannel, restaResolucion, sumaResolucion
 };
 
-enum{
-	six = 0,
-	eight,
-	ten,
-	twelve
+enum {
+	six = 0, eight, ten, twelve
 };
 
 int main(void) {
@@ -132,7 +121,7 @@ int main(void) {
 		changeChannel(&trimmer, channelOption);
 
 		// Realizamos unos determinados pasos cuando la bandera del encoder esté arriba.
-		if(ckEncoder){
+		if (ckEncoder) {
 			//Bajamos la bandera dela interrupción.
 			ckEncoder = 0;
 			//almacenamos la informacion recibida por los datos
@@ -143,11 +132,11 @@ int main(void) {
 			caseEncoder(&direccionEncoder);
 		}
 		// Realizamos unos determinados pasos cuando la bandera del timer de impresión esté arriba.
-		if(bandera1 && adcComplete){
+		if (bandera1 && adcComplete) {
 			bandera1 = 0;
 			adcComplete = 0;
-			sprintf(bufferPrint,"ADC %d, Sensor: %d, Resolution: %d \n\n",
-					trimmer.adcData,adcChannelaux,adcResolution);
+			sprintf(bufferPrint, "ADC %d, Sensor: %d, Resolution: %d \n\n",
+					trimmer.adcData, adcChannelaux, adcResolution);
 			usart_writeMsg(&usart, bufferPrint);
 			adc_StartSingleConv();
 		}
@@ -168,13 +157,13 @@ int main(void) {
 			commandFlag = 0;
 		}
 
-		if(switchTransistores){
+		if (switchTransistores) {
 			//Bajamos la bandera
 			switchTransistores = 0;
 			//Limpiamos los valores que se encuentran en el 7 segmentos.
 			writeClean();
 			gpio_WritePin(&userDir, RESET);
-			if(switch7segment){
+			if (switch7segment) {
 				/*
 				 * Escribimos el valor switch7segment en el pin userSwitch pin que se encarga
 				 * de suichear nuestros transistores
@@ -187,10 +176,10 @@ int main(void) {
 				 * del timer este cambie de transistor
 				 */
 				switch7segment = 0;
-				if(botonEncoder){
+				if (botonEncoder) {
 					gpio_WritePin(&userDir, SET);
 				}
-			} else{
+			} else {
 				/*
 				 * Escribimos el valor switch7segment en el pin userSwitch pin que se encarga
 				 * de suichear nuestros transistores
@@ -204,17 +193,16 @@ int main(void) {
 				 * del timer este cambie de transistor
 				 */
 				switch7segment = 1;
-				if(!botonEncoder){
+				if (!botonEncoder) {
 					gpio_WritePin(&userDir, SET);
 				}
 			}
 
 		}
-		}
+	}
 }
 
-void initSys(void){
-
+void initSys(void) {
 
 	//Configuramos los pines que se van a utilizar
 
@@ -299,37 +287,37 @@ void initSys(void){
 	userSwitch.pinConfig.GPIO_PinPuPdControl = GPIO_PUPDR_PULLDOWN;
 
 	/* Configuramos el PinB5 */
-	userData.pGPIOx 						= GPIOB;
-	userData.pinConfig.GPIO_PinNumber 		= PIN_5;
-	userData.pinConfig.GPIO_PinMode 		= GPIO_MODE_IN;
+	userData.pGPIOx = GPIOB;
+	userData.pinConfig.GPIO_PinNumber = PIN_5;
+	userData.pinConfig.GPIO_PinMode = GPIO_MODE_IN;
 
 	/* Configuramos el PinB3 */
-	userSWenc.pGPIOx						= GPIOA;
-	userSWenc.pinConfig.GPIO_PinNumber		= PIN_10;
-	userSWenc.pinConfig.GPIO_PinMode		= GPIO_MODE_IN;
+	userSWenc.pGPIOx = GPIOA;
+	userSWenc.pinConfig.GPIO_PinNumber = PIN_10;
+	userSWenc.pinConfig.GPIO_PinMode = GPIO_MODE_IN;
 
 	/* Configuramos el PinB13 */
-	userCKenc.pGPIOx 						= GPIOB;
-	userCKenc.pinConfig.GPIO_PinNumber 		= PIN_3;
-	userCKenc.pinConfig.GPIO_PinMode 		= GPIO_MODE_IN;
+	userCKenc.pGPIOx = GPIOB;
+	userCKenc.pinConfig.GPIO_PinNumber = PIN_3;
+	userCKenc.pinConfig.GPIO_PinMode = GPIO_MODE_IN;
 
 	/* Configuramos el PinA2*/
 	userTXusart.pGPIOx = GPIOA;
-	userTXusart.pinConfig.GPIO_PinNumber = PIN_2;
+	userTXusart.pinConfig.GPIO_PinNumber = PIN_11;
 	userTXusart.pinConfig.GPIO_PinMode = GPIO_MODE_ALFTN;
 	userTXusart.pinConfig.GPIO_PinOutputType = GPIO_OTYPE_PUSHPULL;
 	userTXusart.pinConfig.GPIO_PinOutputSpeed = GPIO_OSPEED_MEDIUM;
 	userTXusart.pinConfig.GPIO_PinPuPdControl = GPIO_PUPDR_NOTHING;
-	userTXusart.pinConfig.GPIO_PinAltFunMode = AF7;
+	userTXusart.pinConfig.GPIO_PinAltFunMode = AF8;
 
 	/* Configuramos el PinA3*/
 	userRXusart.pGPIOx = GPIOA;
-	userRXusart.pinConfig.GPIO_PinNumber = PIN_3;
+	userRXusart.pinConfig.GPIO_PinNumber = PIN_12;
 	userRXusart.pinConfig.GPIO_PinMode = GPIO_MODE_ALFTN;
 	userRXusart.pinConfig.GPIO_PinOutputType = GPIO_OTYPE_PUSHPULL;
 	userRXusart.pinConfig.GPIO_PinOutputSpeed = GPIO_OSPEED_MEDIUM;
 	userRXusart.pinConfig.GPIO_PinPuPdControl = GPIO_PUPDR_NOTHING;
-	userRXusart.pinConfig.GPIO_PinAltFunMode = AF7;
+	userRXusart.pinConfig.GPIO_PinAltFunMode = AF8;
 
 	//Cargamos la configuracion  en los registros que gobiernan el puerto.
 	gpio_Config(&userLed);
@@ -351,9 +339,7 @@ void initSys(void){
 	//Encendemos el led que nos indica que se cargaron las configuraciones
 	gpio_WritePin(&userLed, SET);
 
-
 	//Configuramos los timers
-
 
 	/* Configuramos el timer del blink (TIM2) */
 	blinkTimer.pTIMx = TIM4;
@@ -386,8 +372,6 @@ void initSys(void){
 	timer_SetState(&displayTimer, TIMER_ON);
 	timer_SetState(&refreshTimer, TIMER_ON);
 
-
-
 	//Configuramos las interrupciones externas (EXTI)
 
 	/* Configuramos el EXTI sw que será en la linea 3 */
@@ -402,11 +386,10 @@ void initSys(void){
 	exti_Config(&swExti);
 	exti_Config(&ckExti);
 
-
 	//Configuramos el protocolo de comunicación
 
 	/*Configuramos el USART*/
-	usart.ptrUSARTx = USART2;
+	usart.ptrUSARTx = USART6;
 	usart.USART_Config.baudrate = USART_BAUDRATE_230400;
 	usart.USART_Config.datasize = USART_DATASIZE_8BIT;
 	usart.USART_Config.mode = USART_MODE_RXTX;
@@ -420,48 +403,48 @@ void initSys(void){
 	//Configuramos el ADC que vamos a usar
 
 	/* Configuramos el ADC 8 */
-	trimmer.channel				= CHANNEL_8;
-	trimmer.resolution			= RESOLUTION_6_BIT;
-	trimmer.dataAlignment		= ALIGNMENT_RIGHT;
-	trimmer.samplingPeriod		= SAMPLING_PERIOD_112_CYCLES;
-	trimmer.interrupState		= ADC_INT_ENABLE;
+	trimmer.channel = CHANNEL_8;
+	trimmer.resolution = RESOLUTION_6_BIT;
+	trimmer.dataAlignment = ALIGNMENT_RIGHT;
+	trimmer.samplingPeriod = SAMPLING_PERIOD_112_CYCLES;
+	trimmer.interrupState = ADC_INT_ENABLE;
 	adc_ConfigSingleChannel(&trimmer);
 
 	//Encedemos el LED que nos indica que estamos en modo Directo.
 	gpio_WritePin(&userDir, SET);
 }
 
-void caseEncoder(uint8_t *cases){
+void caseEncoder(uint8_t *cases) {
 	/*
 	 * Creamos un switch case con los casos para el encoder con sus debidas funciones
 	 * paracada movimiento.
 	 */
-	switch(*cases){
-	case restaChannel:{
-		if (adcChannel != 0){
+	switch (*cases) {
+	case restaChannel: {
+		if (adcChannel != 0) {
 			resta(&adcChannel);
 		}
 		break;
 	}
-	case sumaChannel:{
-		if (adcChannel < 2){
+	case sumaChannel: {
+		if (adcChannel < 2) {
 			suma(&adcChannel);
 		}
 		break;
 	}
-	case restaResolucion:{
-		if (adcResolution != 0){
+	case restaResolucion: {
+		if (adcResolution != 0) {
 			resta(&adcResolution);
 		}
 		break;
 	}
-	case sumaResolucion:{
-		if (adcResolution < 3){
+	case sumaResolucion: {
+		if (adcResolution < 3) {
 			suma(&adcResolution);
 		}
 		break;
 	}
-	default:{
+	default: {
 		break;
 	}
 	}
@@ -515,35 +498,35 @@ void write7segments(uint8_t numero) {
 	gpio_WritePin(&userLedG, pinG);
 }
 
-void writePattern(uint8_t pattern){
-	switch(pattern){
-	case six:{
+void writePattern(uint8_t pattern) {
+	switch (pattern) {
+	case six: {
 		gpio_WritePin(&userLedE, SET);
 		break;
 	}
-	case eight:{
+	case eight: {
 		gpio_WritePin(&userLedD, SET);
 		break;
 	}
-	case ten:{
+	case ten: {
 		gpio_WritePin(&userLedD, SET);
 		gpio_WritePin(&userLedG, SET);
 		break;
 	}
-	case twelve:{
+	case twelve: {
 		gpio_WritePin(&userLedD, SET);
 		gpio_WritePin(&userLedG, SET);
 		gpio_WritePin(&userLedA, SET);
 		break;
 	}
-	default:{
+	default: {
 		__NOP();
 		break;
 	}
 	}
 }
 
-void writeClean(void){
+void writeClean(void) {
 	gpio_WritePin(&userLedA, RESET);
 	gpio_WritePin(&userLedB, RESET);
 	gpio_WritePin(&userLedC, RESET);
@@ -565,120 +548,116 @@ void resta(uint8_t *conteo) {
 // Función que cambia la resolucion del ADC
 void changeResolution(ADC_Config_t *adcConfig, uint8_t resolution) {
 	adcConfig->resolution = resolution;
-	adc_ConfigSingleChannel (adcConfig);
+	adc_ConfigSingleChannel(adcConfig);
 	adc_StartSingleConv();
 }
 
 // Función que cambia el canal del ADC
 void changeChannel(ADC_Config_t *adcConfig, uint8_t channel) {
 	adcConfig->channel = channel;
-	adc_ConfigSingleChannel (adcConfig);
+	adc_ConfigSingleChannel(adcConfig);
 	adc_StartSingleConv();
 }
 
-uint8_t channelOptions(uint8_t *numero){
-	switch (*numero){
-	case 0:{
+uint8_t channelOptions(uint8_t *numero) {
+	switch (*numero) {
+	case 0: {
 		return 8;
 		break;
 	}
-	case 1:{
+	case 1: {
 		return 10;
 		break;
 	}
-	case 2:{
+	case 2: {
 		return 11;
 		break;
 	}
-	default:{
+	default: {
 		return 8;
 		break;
 	}
 	}
 }
 
-uint8_t resolutionOptions(uint8_t *numero){
-	switch (*numero){
-	case 0:{
+uint8_t resolutionOptions(uint8_t *numero) {
+	switch (*numero) {
+	case 0: {
 		return 3;
 		break;
 	}
-	case 1:{
+	case 1: {
 		return 2;
 		break;
 	}
-	case 2:{
+	case 2: {
 		return 1;
 		break;
 	}
-	case 3:{
+	case 3: {
 		return 0;
 		break;
 	}
-	default:{
+	default: {
 		return 3;
 		break;
 	}
 	}
 }
 
-void analyzeCommand(char *buffer){
+void analyzeCommand(char *buffer) {
 
-	if(strcmp(commandBuffer,"p") == 0){
+	if (strcmp(commandBuffer, "p") == 0) {
 		usart_writeMsg(&usart, "Testing, Testing!! \n");
 	}
 
-	else if(strcmp(commandBuffer,"m") == 0){
+	else if (strcmp(commandBuffer, "m") == 0) {
 		usart_writeMsg(&usart, "Cambiar Modo \n\n");
 		botonEncoder ^= 1;
 	}
 
-
-	else if(strcmp(commandBuffer,"a") == 0){
-		if(botonEncoder){
+	else if (strcmp(commandBuffer, "a") == 0) {
+		if (botonEncoder) {
 			uint8_t sumar = 0;
 			sumar = botonEncoder + 2;
 			caseEncoder(&sumar);
-			sprintf(bufferPrint, "Resolution %d\n\n",adcResolution);
+			sprintf(bufferPrint, "Resolution %d\n\n", adcResolution);
 			usart_writeMsg(&usart, bufferPrint);
-		}
-		else{
+		} else {
 			uint8_t sumar = 0;
 			sumar = botonEncoder + 1;
 			caseEncoder(&sumar);
 			adcChannelaux = adcChannel + 1;
-			sprintf(bufferPrint, "Sensor %d\n\n",adcChannelaux);
+			sprintf(bufferPrint, "Sensor %d\n\n", adcChannelaux);
 			usart_writeMsg(&usart, bufferPrint);
 		}
 	}
 
-
-	else if(strcmp(commandBuffer,"d") == 0){
-		if(botonEncoder){
+	else if (strcmp(commandBuffer, "d") == 0) {
+		if (botonEncoder) {
 			uint8_t restar = 0;
 			restar = botonEncoder + 1;
 			caseEncoder(&restar);
-			sprintf(bufferPrint, "Resolution %d\n\n",adcResolution);
+			sprintf(bufferPrint, "Resolution %d\n\n", adcResolution);
 			usart_writeMsg(&usart, bufferPrint);
-		}
-		else{
+		} else {
 			uint8_t restar = 0;
 			restar = botonEncoder;
 			caseEncoder(&restar);
 			adcChannelaux = adcChannel + 1;
-			sprintf(bufferPrint, "Sensor %d\n\n",adcChannelaux);
+			sprintf(bufferPrint, "Sensor %d\n\n", adcChannelaux);
 			usart_writeMsg(&usart, bufferPrint);
 		}
 	}
 }
 
-uint8_t isLetterCode(char caracter){
-	if(caracter == 'a' || caracter == 'p' || caracter == 'm' || caracter == 'd'){
+uint8_t isLetterCode(char caracter) {
+	if (caracter == 'a' || caracter == 'p' || caracter == 'm'
+			|| caracter == 'd') {
 		return 1;
 	}
 	return 0;
 }
-
 
 void Timer2_Callback(void) {
 	switchTransistores = 1;
@@ -688,7 +667,7 @@ void Timer4_Callback(void) {
 	gpio_TooglePin(&userLed);
 }
 
-void Timer10_Callback(void){
+void Timer10_Callback(void) {
 	bandera1 = 1;
 }
 
@@ -706,11 +685,11 @@ void callback_ExtInt3(void) {
 
 }
 
-void usart2_RxCallback(void){
-	rxData = usart_getRxData2();
+void usart6_RxCallback(void) {
+	rxData = usart_getRxData6();
 }
 
-void adc_CompleteCallback (void){
+void adc_CompleteCallback(void) {
 	adcComplete = 1;
 	trimmer.adcData = adc_GetValue();
 }
