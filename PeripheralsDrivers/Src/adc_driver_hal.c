@@ -844,6 +844,9 @@ static void adc_set_one_channel_sequence(ADC_Config_t *adcConfig){
 	/* Como solo será un elemento configuraremos el Length a un solo elemnto*/
 	ADC1->SQR1 &= ~ADC_SQR1_L;
 
+	/* Limpiamos el resgistro primero*/
+	ADC1->SQR3 &= ~(ADC_SQR3_SQ1);
+
 	/* Ahora configuraremos la cada canal de acuerdo a la elección
 	 * de un solo elemento en la secuencia
 	 */
@@ -862,7 +865,7 @@ static void adc_set_one_channel_sequence(ADC_Config_t *adcConfig){
 		break;
 	}
 	case CHANNEL_3:{
-		ADC1->SQR3 |= ADC_SQR3_SQ1_0 | ADC_SQR3_SQ1_1;
+		ADC1->SQR3 |= 3 << ADC_SQR3_SQ1_Pos;
 		break;
 	}
 	case CHANNEL_4:{
@@ -870,15 +873,15 @@ static void adc_set_one_channel_sequence(ADC_Config_t *adcConfig){
 		break;
 	}
 	case CHANNEL_5:{
-		ADC1->SQR3 |= ADC_SQR3_SQ1_0 | ADC_SQR3_SQ1_2;
+		ADC1->SQR3 |= 5 << ADC_SQR3_SQ1_Pos;
 		break;
 	}
 	case CHANNEL_6:{
-		ADC1->SQR3 |= ADC_SQR3_SQ1_1 | ADC_SQR3_SQ1_2;
+		ADC1->SQR3 |= 6 << ADC_SQR3_SQ1_Pos;
 		break;
 	}
 	case CHANNEL_7:{
-		ADC1->SQR3 |= ADC_SQR3_SQ1_0 | ADC_SQR3_SQ1_1 | ADC_SQR3_SQ1_2;
+		ADC1->SQR3 |= 7 << ADC_SQR3_SQ1_Pos;
 		break;
 	}
 	case CHANNEL_8:{
@@ -886,31 +889,31 @@ static void adc_set_one_channel_sequence(ADC_Config_t *adcConfig){
 		break;
 	}
 	case CHANNEL_9:{
-		ADC1->SQR3 |= ADC_SQR3_SQ1_0 | ADC_SQR3_SQ1_3;
+		ADC1->SQR3 |= 9 << ADC_SQR3_SQ1_Pos;
 		break;
 	}
 	case CHANNEL_10:{
-		ADC1->SQR3 |= ADC_SQR3_SQ1_4;
+		ADC1->SQR3 |= 10 << ADC_SQR3_SQ1_Pos;
 		break;
 	}
 	case CHANNEL_11:{
-		ADC1->SQR3 |= ADC_SQR3_SQ1_0 | ADC_SQR3_SQ1_4;
+		ADC1->SQR3 |= 11 << ADC_SQR3_SQ1_Pos;
 		break;
 	}
 	case CHANNEL_12:{
-		ADC1->SQR3 |= ADC_SQR3_SQ1_1 | ADC_SQR3_SQ1_4;
+		ADC1->SQR3 |= 12 << ADC_SQR3_SQ1_Pos;
 		break;
 	}
 	case CHANNEL_13:{
-		ADC1->SQR3 |= ADC_SQR3_SQ1_0 | ADC_SQR3_SQ1_1 | ADC_SQR3_SQ1_4;
+		ADC1->SQR3 |= 13 << ADC_SQR3_SQ1_Pos;
 		break;
 	}
 	case CHANNEL_14:{
-		ADC1->SQR3 |= ADC_SQR3_SQ1_2 | ADC_SQR3_SQ1_4;
+		ADC1->SQR3 |= 14 << ADC_SQR3_SQ1_Pos;
 		break;
 	}
 	case CHANNEL_15:{
-		ADC1->SQR3 |= ADC_SQR3_SQ1_0 | ADC_SQR3_SQ1_2 | ADC_SQR3_SQ1_4;
+		ADC1->SQR3 |= 15 << ADC_SQR3_SQ1_Pos;
 		break;
 	}
 	default:{
