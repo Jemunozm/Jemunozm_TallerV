@@ -390,7 +390,7 @@ void initSys(void) {
 
 	/*Configuramos el USART*/
 	usart.ptrUSARTx = USART6;
-	usart.USART_Config.baudrate = USART_BAUDRATE_230400;
+	usart.USART_Config.baudrate = USART_BAUDRATE_38400;
 	usart.USART_Config.datasize = USART_DATASIZE_8BIT;
 	usart.USART_Config.mode = USART_MODE_RXTX;
 	usart.USART_Config.parity = USART_PARITY_NONE;
