@@ -18,20 +18,20 @@
 
 //Definimos los pines que se van a utilizar.
 GPIO_Handler_t userLed 		= { 0 }; // PinA5
-GPIO_Handler_t userLed1 	= { 0 }; // PinC6
-GPIO_Handler_t userLed2 	= { 0 }; // PinA7
-GPIO_Handler_t userLed3 	= { 0 }; // PinC8
-GPIO_Handler_t userLed4 	= { 0 }; // PinA9
-GPIO_Handler_t userLed5 	= { 0 }; // PinC9
-GPIO_Handler_t userLed6 	= { 0 }; // PinA7
-GPIO_Handler_t userLed7 	= { 0 }; // PinA8
+GPIO_Handler_t userLedA 	= { 0 }; // PinC6
+GPIO_Handler_t userLedB 	= { 0 }; // PinA7
+GPIO_Handler_t userLedC 	= { 0 }; // PinC8
+GPIO_Handler_t userLedD 	= { 0 }; // PinA9
+GPIO_Handler_t userLedE 	= { 0 }; // PinC9
+GPIO_Handler_t userLedF 	= { 0 }; // PinA7
+GPIO_Handler_t userLedG 	= { 0 }; // PinA8
 GPIO_Handler_t userDir 		= { 0 }; // PinB12
 GPIO_Handler_t userSwitch 	= { 0 }; // PinA10
 GPIO_Handler_t userData 	= { 0 }; // PinB5
-GPIO_Handler_t userSWenc 	= { 0 }; // PinB3
-GPIO_Handler_t userCKenc 	= { 0 }; // PinB13
-GPIO_Handler_t userTRusart	= { 0 };
-GPIO_Handler_t userRXusart	= { 0 };
+GPIO_Handler_t userSWenc 	= { 0 }; // PinA10
+GPIO_Handler_t userCKenc 	= { 0 }; // PinB3
+GPIO_Handler_t userTXusart	= { 0 }; // PA11
+GPIO_Handler_t userRXusart	= { 0 }; // PA12
 
 
 
@@ -48,8 +48,6 @@ EXTI_Config_t ckExti = { 0 }; //Exti linea 3 para el ck del enconder.
 
 //Definimos el ADC que vamos a utilizar.
 ADC_Config_t trimmer = {0};
-//ADC_Config_t trimmer2 = {0};
-//ADC_Config_t trimmer3 = {0};
 
 //Definimos el pin USART que vamos a utilizar.
 USART_Handler_t usart = { 0 };
@@ -57,21 +55,6 @@ uint8_t rxData = 0;
 char bufferData[64] = { 0 };
 char commandBuffer[64] = { 0 };
 char bufferPrint[64] = { 0 };
-
-/*
- * Creación de variables globales para convertir un numero de binario
- * a un numero de 7 segmentos.
- * Teniendo en cuenta una configuración antes vista (primeras semanas de clase)
- */
-
-// Variables de los bits que se encienden para generar cada numero del 0 al 9
-uint8_t bit0 = 0;
-uint8_t bit0n = 0;
-uint8_t bit1 = 0;
-uint8_t bit1n = 0;
-uint8_t bit2 = 0;
-uint8_t bit2n = 0;
-uint8_t bit3 = 0;
 
 // Variables de cada led del 7 segmento.
 uint8_t pinA = 0;
@@ -85,70 +68,93 @@ uint8_t pinG = 0;
 //Variables auxiliares que nos ayudaran en el codigo
 uint8_t botonEncoder = 0;
 uint8_t dataEncoder = 0;
+uint8_t ckEncoder = 0;
 uint8_t direccionEncoder = 0;
 uint8_t switch7segment = 0;
-uint8_t resolucionADC = 0;
-uint8_t channelADC = 0;
+uint8_t adcResolution = 0;
+uint8_t adcChannel = 0;
+uint8_t adcChannelaux = 0;
 uint8_t channelOption = 0;
 uint8_t adcComplete = 0;
 uint8_t receivedChar = 0;
 uint8_t commandFlag = 0;
 uint8_t bandera1 = 0;
 uint8_t programStatus = 0;
-
-
+uint8_t switchTransistores = 0;
+uint8_t resolutionOption = 0;
 
 //llamamos las funciones definidas al final del codigo
 void initSys(void);
 void write7segments(uint8_t numero);
+void writePattern(uint8_t pattern);
+void writeClean(void);
 void suma(uint8_t *conteo);
 void resta(uint8_t *conteo);
-uint8_t isLetter(char caracter);
-uint8_t isNumber(char caracter);
-uint8_t isNotControl(char caracter);
 void analyzeCommand(char *buffer);
-void begin_program(void);
-void stop_program(void);
-
+uint8_t isLetter(char caracter);
+uint8_t isNotControl(char caracter);
+uint8_t isLetterCode(char caracter);
+void caseEncoder(uint8_t *cases);
+void changeResolution(ADC_Config_t *adcConfig, uint8_t resolution);
+void changeChannel(ADC_Config_t *adcConfig, uint8_t channel);
+uint8_t channelOptions(uint8_t *numero);
+uint8_t resolutionOptions(uint8_t *numero);
 
 //Creación de un enum con los cuatro posibles casos del encoder y tarea.
 
 enum {
-	sumaResolucion = 0, sumaChannel, restaResolucion, restaChannel
+	restaChannel = 0,
+	sumaChannel,
+	restaResolucion,
+	sumaResolucion
+};
+
+enum{
+	six = 0,
+	eight,
+	ten,
+	twelve
 };
 
 int main(void) {
 	initSys();
 	usart_writeMsg(&usart, "Hola mundo \r");
+	adc_StartSingleConv();
 	while (1) {
 
-		if(programStatus){
-			if(bandera1){
-				adc_StartSingleConv();
-				bandera1 = 0;
-				begin_program();
-			}
-		}else{
-			stop_program();
+		adcChannelaux = adcChannel + 1;
+
+		//Actualizamos la variable que nos dará la direccion de conteo para los casos.
+		direccionEncoder = (botonEncoder << 1) | (dataEncoder << 0);
+		resolutionOption = resolutionOptions(&adcResolution);
+		changeResolution(&trimmer, resolutionOption);
+		channelOption = channelOptions(&adcChannel);
+		changeChannel(&trimmer, channelOption);
+
+		// Realizamos unos determinados pasos cuando la bandera del encoder esté arriba.
+		if(ckEncoder){
+			//Bajamos la bandera dela interrupción.
+			ckEncoder = 0;
+			//almacenamos la informacion recibida por los datos
+			dataEncoder = gpio_ReadPin(&userData);
+			//Actualizamos la variable que nos dará la direccion de conteo para los casos.
+			direccionEncoder = (botonEncoder << 1) | (dataEncoder << 0);
+
+			caseEncoder(&direccionEncoder);
+		}
+		// Realizamos unos determinados pasos cuando la bandera del timer de impresión esté arriba.
+		if(bandera1 && adcComplete){
+			bandera1 = 0;
+			adcComplete = 0;
+			sprintf(bufferPrint,"ADC %d, Sensor: %d, Resolution: %d \n\n",
+					trimmer.adcData,adcChannelaux,adcResolution);
+			usart_writeMsg(&usart, bufferPrint);
+			adc_StartSingleConv();
 		}
 
-
-		//Actualizamos dos nuestras variables auxiliares.
-		direccionEncoder = (botonEncoder << 1) | (dataEncoder << 0);
-		/*
-		 * Este conjunto me ayuda a identificar que tipo de caracter
-		 * estoy recibiendo y de acuerdo a ello imprimo y ejecuto
-		 * comandos.
-		 */
 		if (rxData != 0) {
-			if (isNotControl(rxData)) {
-				usart_WriteChar(&usart, rxData);
+			if (isLetterCode(rxData)) {
 				strcat(commandBuffer, (char*) &rxData);
-			}
-
-			else if (rxData == 0x0D) {
-				usart_writeMsg(&usart, "\n");
-//				strcat(commandBuffer, (char*) &rxData);
 				commandFlag = 1;
 			}
 			rxData = 0;
@@ -162,8 +168,49 @@ int main(void) {
 			commandFlag = 0;
 		}
 
+		if(switchTransistores){
+			//Bajamos la bandera
+			switchTransistores = 0;
+			//Limpiamos los valores que se encuentran en el 7 segmentos.
+			writeClean();
+			gpio_WritePin(&userDir, RESET);
+			if(switch7segment){
+				/*
+				 * Escribimos el valor switch7segment en el pin userSwitch pin que se encarga
+				 * de suichear nuestros transistores
+				 * para así encender el 7segmentos izquierdo (resolucion)
+				 */
+				gpio_WritePin(&userSwitch, switch7segment);
+				//Escribimos el numero de la resolucion.
+				writePattern(adcResolution);
+				/* cambiamos elvalor de switch para que en el proximo evento
+				 * del timer este cambie de transistor
+				 */
+				switch7segment = 0;
+				if(botonEncoder){
+					gpio_WritePin(&userDir, SET);
+				}
+			} else{
+				/*
+				 * Escribimos el valor switch7segment en el pin userSwitch pin que se encarga
+				 * de suichear nuestros transistores
+				 * para así encender el 7 segmentos de la derecha (canales).
+				 */
+				gpio_WritePin(&userSwitch, switch7segment);
+				//Escribimos el numero del canal
 
-	}
+				write7segments(adcChannelaux);
+				/* cambiamos elvalor de switch para que en el proximo evento
+				 * del timer este cambie de transistor
+				 */
+				switch7segment = 1;
+				if(!botonEncoder){
+					gpio_WritePin(&userDir, SET);
+				}
+			}
+
+		}
+		}
 }
 
 void initSys(void){
@@ -180,60 +227,60 @@ void initSys(void){
 	userLed.pinConfig.GPIO_PinPuPdControl = GPIO_PUPDR_NOTHING;
 
 	/* Configuramos el PinC6 */
-	userLed1.pGPIOx = GPIOC;
-	userLed1.pinConfig.GPIO_PinNumber = PIN_6;
-	userLed1.pinConfig.GPIO_PinMode = GPIO_MODE_OUT;
-	userLed1.pinConfig.GPIO_PinOutputType = GPIO_OTYPE_PUSHPULL;
-	userLed1.pinConfig.GPIO_PinOutputSpeed = GPIO_OSPEED_MEDIUM;
-	userLed1.pinConfig.GPIO_PinPuPdControl = GPIO_PUPDR_NOTHING;
+	userLedA.pGPIOx = GPIOC;
+	userLedA.pinConfig.GPIO_PinNumber = PIN_6;
+	userLedA.pinConfig.GPIO_PinMode = GPIO_MODE_OUT;
+	userLedA.pinConfig.GPIO_PinOutputType = GPIO_OTYPE_PUSHPULL;
+	userLedA.pinConfig.GPIO_PinOutputSpeed = GPIO_OSPEED_MEDIUM;
+	userLedA.pinConfig.GPIO_PinPuPdControl = GPIO_PUPDR_NOTHING;
 
 	/* Configuramos el PinA7 */
-	userLed2.pGPIOx = GPIOA;
-	userLed2.pinConfig.GPIO_PinNumber = PIN_7;
-	userLed2.pinConfig.GPIO_PinMode = GPIO_MODE_OUT;
-	userLed2.pinConfig.GPIO_PinOutputType = GPIO_OTYPE_PUSHPULL;
-	userLed2.pinConfig.GPIO_PinOutputSpeed = GPIO_OSPEED_MEDIUM;
-	userLed2.pinConfig.GPIO_PinPuPdControl = GPIO_PUPDR_NOTHING;
+	userLedB.pGPIOx = GPIOA;
+	userLedB.pinConfig.GPIO_PinNumber = PIN_7;
+	userLedB.pinConfig.GPIO_PinMode = GPIO_MODE_OUT;
+	userLedB.pinConfig.GPIO_PinOutputType = GPIO_OTYPE_PUSHPULL;
+	userLedB.pinConfig.GPIO_PinOutputSpeed = GPIO_OSPEED_MEDIUM;
+	userLedB.pinConfig.GPIO_PinPuPdControl = GPIO_PUPDR_NOTHING;
 
 	/* Configuramos el PinC8 */
-	userLed3.pGPIOx = GPIOC;
-	userLed3.pinConfig.GPIO_PinNumber = PIN_8;
-	userLed3.pinConfig.GPIO_PinMode = GPIO_MODE_OUT;
-	userLed3.pinConfig.GPIO_PinOutputType = GPIO_OTYPE_PUSHPULL;
-	userLed3.pinConfig.GPIO_PinOutputSpeed = GPIO_OSPEED_MEDIUM;
-	userLed3.pinConfig.GPIO_PinPuPdControl = GPIO_PUPDR_NOTHING;
+	userLedC.pGPIOx = GPIOC;
+	userLedC.pinConfig.GPIO_PinNumber = PIN_8;
+	userLedC.pinConfig.GPIO_PinMode = GPIO_MODE_OUT;
+	userLedC.pinConfig.GPIO_PinOutputType = GPIO_OTYPE_PUSHPULL;
+	userLedC.pinConfig.GPIO_PinOutputSpeed = GPIO_OSPEED_MEDIUM;
+	userLedC.pinConfig.GPIO_PinPuPdControl = GPIO_PUPDR_NOTHING;
 
 	/* Configuramos el PinA9 */
-	userLed4.pGPIOx = GPIOA;
-	userLed4.pinConfig.GPIO_PinNumber = PIN_9;
-	userLed4.pinConfig.GPIO_PinMode = GPIO_MODE_OUT;
-	userLed4.pinConfig.GPIO_PinOutputType = GPIO_OTYPE_PUSHPULL;
-	userLed4.pinConfig.GPIO_PinOutputSpeed = GPIO_OSPEED_MEDIUM;
-	userLed4.pinConfig.GPIO_PinPuPdControl = GPIO_PUPDR_NOTHING;
+	userLedD.pGPIOx = GPIOA;
+	userLedD.pinConfig.GPIO_PinNumber = PIN_9;
+	userLedD.pinConfig.GPIO_PinMode = GPIO_MODE_OUT;
+	userLedD.pinConfig.GPIO_PinOutputType = GPIO_OTYPE_PUSHPULL;
+	userLedD.pinConfig.GPIO_PinOutputSpeed = GPIO_OSPEED_MEDIUM;
+	userLedD.pinConfig.GPIO_PinPuPdControl = GPIO_PUPDR_NOTHING;
 
 	/* Configuramos el PinC9 */
-	userLed5.pGPIOx = GPIOC;
-	userLed5.pinConfig.GPIO_PinNumber = PIN_9;
-	userLed5.pinConfig.GPIO_PinMode = GPIO_MODE_OUT;
-	userLed5.pinConfig.GPIO_PinOutputType = GPIO_OTYPE_PUSHPULL;
-	userLed5.pinConfig.GPIO_PinOutputSpeed = GPIO_OSPEED_MEDIUM;
-	userLed5.pinConfig.GPIO_PinPuPdControl = GPIO_PUPDR_NOTHING;
+	userLedE.pGPIOx = GPIOC;
+	userLedE.pinConfig.GPIO_PinNumber = PIN_9;
+	userLedE.pinConfig.GPIO_PinMode = GPIO_MODE_OUT;
+	userLedE.pinConfig.GPIO_PinOutputType = GPIO_OTYPE_PUSHPULL;
+	userLedE.pinConfig.GPIO_PinOutputSpeed = GPIO_OSPEED_MEDIUM;
+	userLedE.pinConfig.GPIO_PinPuPdControl = GPIO_PUPDR_NOTHING;
 
 	/* Configuramos el PinA6 */
-	userLed6.pGPIOx = GPIOA;
-	userLed6.pinConfig.GPIO_PinNumber = PIN_6;
-	userLed6.pinConfig.GPIO_PinMode = GPIO_MODE_OUT;
-	userLed6.pinConfig.GPIO_PinOutputType = GPIO_OTYPE_PUSHPULL;
-	userLed6.pinConfig.GPIO_PinOutputSpeed = GPIO_OSPEED_MEDIUM;
-	userLed6.pinConfig.GPIO_PinPuPdControl = GPIO_PUPDR_NOTHING;
+	userLedF.pGPIOx = GPIOA;
+	userLedF.pinConfig.GPIO_PinNumber = PIN_6;
+	userLedF.pinConfig.GPIO_PinMode = GPIO_MODE_OUT;
+	userLedF.pinConfig.GPIO_PinOutputType = GPIO_OTYPE_PUSHPULL;
+	userLedF.pinConfig.GPIO_PinOutputSpeed = GPIO_OSPEED_MEDIUM;
+	userLedF.pinConfig.GPIO_PinPuPdControl = GPIO_PUPDR_NOTHING;
 
 	/* Configuramos el PinA8 */
-	userLed7.pGPIOx = GPIOA;
-	userLed7.pinConfig.GPIO_PinNumber = PIN_8;
-	userLed7.pinConfig.GPIO_PinMode = GPIO_MODE_OUT;
-	userLed7.pinConfig.GPIO_PinOutputType = GPIO_OTYPE_PUSHPULL;
-	userLed7.pinConfig.GPIO_PinOutputSpeed = GPIO_OSPEED_MEDIUM;
-	userLed7.pinConfig.GPIO_PinPuPdControl = GPIO_PUPDR_NOTHING;
+	userLedG.pGPIOx = GPIOA;
+	userLedG.pinConfig.GPIO_PinNumber = PIN_8;
+	userLedG.pinConfig.GPIO_PinMode = GPIO_MODE_OUT;
+	userLedG.pinConfig.GPIO_PinOutputType = GPIO_OTYPE_PUSHPULL;
+	userLedG.pinConfig.GPIO_PinOutputSpeed = GPIO_OSPEED_MEDIUM;
+	userLedG.pinConfig.GPIO_PinPuPdControl = GPIO_PUPDR_NOTHING;
 
 	/* Configuramos el PinB12 */
 	userDir.pGPIOx = GPIOC;
@@ -267,13 +314,13 @@ void initSys(void){
 	userCKenc.pinConfig.GPIO_PinMode 		= GPIO_MODE_IN;
 
 	/* Configuramos el PinA2*/
-	userTRusart.pGPIOx = GPIOA;
-	userTRusart.pinConfig.GPIO_PinNumber = PIN_2;
-	userTRusart.pinConfig.GPIO_PinMode = GPIO_MODE_ALFTN;
-	userTRusart.pinConfig.GPIO_PinOutputType = GPIO_OTYPE_PUSHPULL;
-	userTRusart.pinConfig.GPIO_PinOutputSpeed = GPIO_OSPEED_MEDIUM;
-	userTRusart.pinConfig.GPIO_PinPuPdControl = GPIO_PUPDR_NOTHING;
-	userTRusart.pinConfig.GPIO_PinAltFunMode = AF7;
+	userTXusart.pGPIOx = GPIOA;
+	userTXusart.pinConfig.GPIO_PinNumber = PIN_2;
+	userTXusart.pinConfig.GPIO_PinMode = GPIO_MODE_ALFTN;
+	userTXusart.pinConfig.GPIO_PinOutputType = GPIO_OTYPE_PUSHPULL;
+	userTXusart.pinConfig.GPIO_PinOutputSpeed = GPIO_OSPEED_MEDIUM;
+	userTXusart.pinConfig.GPIO_PinPuPdControl = GPIO_PUPDR_NOTHING;
+	userTXusart.pinConfig.GPIO_PinAltFunMode = AF7;
 
 	/* Configuramos el PinA3*/
 	userRXusart.pGPIOx = GPIOA;
@@ -286,20 +333,20 @@ void initSys(void){
 
 	//Cargamos la configuracion  en los registros que gobiernan el puerto.
 	gpio_Config(&userLed);
-	gpio_Config(&userLed1);
-	gpio_Config(&userLed2);
-	gpio_Config(&userLed3);
-	gpio_Config(&userLed4);
-	gpio_Config(&userLed5);
-	gpio_Config(&userLed6);
-	gpio_Config(&userLed7);
+	gpio_Config(&userLedA);
+	gpio_Config(&userLedB);
+	gpio_Config(&userLedC);
+	gpio_Config(&userLedD);
+	gpio_Config(&userLedE);
+	gpio_Config(&userLedF);
+	gpio_Config(&userLedG);
 	gpio_Config(&userDir);
 	gpio_Config(&userSwitch);
 	gpio_Config(&userData);
 	gpio_Config(&userSWenc);
 	gpio_Config(&userCKenc);
 	gpio_Config(&userRXusart);
-	gpio_Config(&userTRusart);
+	gpio_Config(&userTXusart);
 
 	//Encendemos el led que nos indica que se cargaron las configuraciones
 	gpio_WritePin(&userLed, SET);
@@ -325,7 +372,7 @@ void initSys(void){
 	/* Configuramos el timer que refresca la informacion (TIM10) */
 	refreshTimer.pTIMx = TIM10;
 	refreshTimer.TIMx_Config.TIMx_Prescaler = 16000;
-	refreshTimer.TIMx_Config.TIMx_Period = 1500;
+	refreshTimer.TIMx_Config.TIMx_Period = 3000;
 	refreshTimer.TIMx_Config.TIMx_mode = TIMER_UP_COUNTER;
 	refreshTimer.TIMx_Config.TIMx_InterruptEnable = TIMER_INT_ENABLE;
 
@@ -374,21 +421,68 @@ void initSys(void){
 
 	/* Configuramos el ADC 8 */
 	trimmer.channel				= CHANNEL_8;
-	trimmer.resolution			= RESOLUTION_12_BIT;
+	trimmer.resolution			= RESOLUTION_6_BIT;
 	trimmer.dataAlignment		= ALIGNMENT_RIGHT;
-	trimmer.samplingPeriod		= SAMPLING_PERIOD_84_CYCLES;
+	trimmer.samplingPeriod		= SAMPLING_PERIOD_112_CYCLES;
 	trimmer.interrupState		= ADC_INT_ENABLE;
 	adc_ConfigSingleChannel(&trimmer);
 
 	//Encedemos el LED que nos indica que estamos en modo Directo.
 	gpio_WritePin(&userDir, SET);
 }
+
+void caseEncoder(uint8_t *cases){
+	/*
+	 * Creamos un switch case con los casos para el encoder con sus debidas funciones
+	 * paracada movimiento.
+	 */
+	switch(*cases){
+	case restaChannel:{
+		if (adcChannel != 0){
+			resta(&adcChannel);
+		}
+		break;
+	}
+	case sumaChannel:{
+		if (adcChannel < 2){
+			suma(&adcChannel);
+		}
+		break;
+	}
+	case restaResolucion:{
+		if (adcResolution != 0){
+			resta(&adcResolution);
+		}
+		break;
+	}
+	case sumaResolucion:{
+		if (adcResolution < 3){
+			suma(&adcResolution);
+		}
+		break;
+	}
+	default:{
+		break;
+	}
+	}
+}
+
 /*
  * Funcion que recibe como parametro una variable que
  * contiene un numero en binario, para así cambiar unas variables globales
  * con las que escribimos los numeros en el 7 segmentos.
  */
 void write7segments(uint8_t numero) {
+
+	// Variables de los bits que se encienden para generar cada numero del 0 al 9
+	uint8_t bit0 = 0;
+	uint8_t bit0n = 0;
+	uint8_t bit1 = 0;
+	uint8_t bit1n = 0;
+	uint8_t bit2 = 0;
+	uint8_t bit2n = 0;
+	uint8_t bit3 = 0;
+
 	bit0 = (numero >> 0) & 1;
 	bit0n = (~numero >> 0) & 1;
 	bit1 = (numero >> 1) & 1;
@@ -411,6 +505,52 @@ void write7segments(uint8_t numero) {
 	pinE = (bit1 & bit0n) | (bit2n & bit0n);
 	pinF = bit3 | (bit2 & bit1n) | (bit2 & bit0n) | (bit1n & bit0n);
 	pinG = bit3 | (bit2 ^ bit1) | (bit1 & bit0n);
+
+	gpio_WritePin(&userLedA, pinA);
+	gpio_WritePin(&userLedB, pinB);
+	gpio_WritePin(&userLedC, pinC);
+	gpio_WritePin(&userLedD, pinD);
+	gpio_WritePin(&userLedE, pinE);
+	gpio_WritePin(&userLedF, pinF);
+	gpio_WritePin(&userLedG, pinG);
+}
+
+void writePattern(uint8_t pattern){
+	switch(pattern){
+	case six:{
+		gpio_WritePin(&userLedE, SET);
+		break;
+	}
+	case eight:{
+		gpio_WritePin(&userLedD, SET);
+		break;
+	}
+	case ten:{
+		gpio_WritePin(&userLedD, SET);
+		gpio_WritePin(&userLedG, SET);
+		break;
+	}
+	case twelve:{
+		gpio_WritePin(&userLedD, SET);
+		gpio_WritePin(&userLedG, SET);
+		gpio_WritePin(&userLedA, SET);
+		break;
+	}
+	default:{
+		__NOP();
+		break;
+	}
+	}
+}
+
+void writeClean(void){
+	gpio_WritePin(&userLedA, RESET);
+	gpio_WritePin(&userLedB, RESET);
+	gpio_WritePin(&userLedC, RESET);
+	gpio_WritePin(&userLedD, RESET);
+	gpio_WritePin(&userLedE, RESET);
+	gpio_WritePin(&userLedF, RESET);
+	gpio_WritePin(&userLedG, RESET);
 }
 // Funcion que suma 1 a la variable que indiquemos como parametro.
 void suma(uint8_t *conteo) {
@@ -426,136 +566,114 @@ void resta(uint8_t *conteo) {
 void changeResolution(ADC_Config_t *adcConfig, uint8_t resolution) {
 	adcConfig->resolution = resolution;
 	adc_ConfigSingleChannel (adcConfig);
+	adc_StartSingleConv();
 }
 
 // Función que cambia el canal del ADC
 void changeChannel(ADC_Config_t *adcConfig, uint8_t channel) {
 	adcConfig->channel = channel;
 	adc_ConfigSingleChannel (adcConfig);
-}
-
-void configTimerPeriod(Timer_Handler_t *timer, uint16_t period) {
-	timer_SetState(&refreshTimer, 0);
-	timer->TIMx_Config.TIMx_Period = period;
-	timer_Config(timer);
-	timer_SetState(&refreshTimer, 1);
+	adc_StartSingleConv();
 }
 
 uint8_t channelOptions(uint8_t *numero){
 	switch (*numero){
 	case 0:{
-		return 0;
+		return 8;
 		break;
 	}
 	case 1:{
-		return 1;
+		return 10;
 		break;
 	}
 	case 2:{
-		return 4;
+		return 11;
 		break;
 	}
 	default:{
-		return 0;
+		return 8;
 		break;
 	}
 	}
 }
 
-void begin_program(void){
-		adc_peripheralOnOff(SET);
-		sprintf(bufferPrint,"El valor del trimmer es %d\n Canal %d\n Resolucion %d\n",trimmer.adcData,trimmer.channel,trimmer.resolution);
-		usart_writeMsg(&usart, bufferPrint);
-}
-void stop_program(void){
-		adc_peripheralOnOff(RESET);
+uint8_t resolutionOptions(uint8_t *numero){
+	switch (*numero){
+	case 0:{
+		return 3;
+		break;
+	}
+	case 1:{
+		return 2;
+		break;
+	}
+	case 2:{
+		return 1;
+		break;
+	}
+	case 3:{
+		return 0;
+		break;
+	}
+	default:{
+		return 3;
+		break;
+	}
+	}
 }
 
 void analyzeCommand(char *buffer){
 
-	if(strcmp(commandBuffer, "help1") == 0){
-		usart_writeMsg(&usart, "Menu de ayuda (help): \n\r");
-		usart_writeMsg(&usart, "1)  help -> Se imprime el menu de ayuda \n");
-		usart_writeMsg(&usart, "2)  t	 -> Se hace testing del usart \n");
-		usart_writeMsg(&usart, "3)  m 	 -> Se habilita el ADC \n");
-		usart_writeMsg(&usart, "4)  c 	 -> Se habilita el modo continuo \n");
-		usart_writeMsg(&usart, "5)  s	 -> Se desabilita el modo continuo \n");
-		usart_writeMsg(&usart, "6) ar+  -> Aumentar la resolución \n");
-		usart_writeMsg(&usart, "7) ar-  -> Disminuir la resolución \n");
-		usart_writeMsg(&usart, "8) ac+  -> Subir de canal \n");
-		usart_writeMsg(&usart, "9) ac-  -> Bajar de canal \n");
-		usart_writeMsg(&usart, "10) tr+  -> Aumentar tasa de refresco \n");
-		usart_writeMsg(&usart, "11) tr-  -> Disminuir tasa de refresco \n");
-		usart_writeMsg(&usart, "11) B  -> Iniciar programa \n");
-		usart_writeMsg(&usart, "11) S  -> Detener programa \n");
-	} else if(strcmp(commandBuffer,"t") == 0){
+	if(strcmp(commandBuffer,"p") == 0){
 		usart_writeMsg(&usart, "Testing, Testing!! \n");
-	} else if(strcmp(commandBuffer,"m") == 0){
-		usart_writeMsg(&usart, "make a simple ADC \n\b\r");
-		adc_StartSingleConv();
-	} else if(strcmp(commandBuffer,"c") == 0){
-		usart_writeMsg(&usart, "Make a continuous ADC \n");
-		adc_StartContinouosConv();
-	} else if(strcmp(commandBuffer,"s") == 0){
-		usart_writeMsg(&usart, "Stop continuous ADC \n");
-		adc_StopContinouosConv();
-	} else if(strcmp(commandBuffer,"ar+") == 0){
-		usart_writeMsg(&usart, "Se aumentó la resolución \n");
-		if(resolucionADC > 0){
-			resta(&resolucionADC);
-			changeResolution(&trimmer, resolucionADC);
-		}
-	} else if(strcmp(commandBuffer,"ar-") == 0){
-		usart_writeMsg(&usart, "Se disminuyó la resolución \n");
-		if(resolucionADC <= 3){
-			suma(&resolucionADC);
-			changeResolution(&trimmer, resolucionADC);
-		}
-	} else if(strcmp(commandBuffer,"ac+") == 0){
-		usart_writeMsg(&usart, "Se subió de canal \n");
-		if(channelADC < 2){
-			suma(&channelADC);
-			channelOption = channelOptions(&channelADC);
-			changeChannel(&trimmer, channelOption);
-		}
-	} else if(strcmp(commandBuffer,"ac-") == 0){
-		usart_writeMsg(&usart, "Se bajó de canal \n");
-		if(channelADC > 0){
-			resta(&channelADC);
-			channelOption = channelOptions(&channelADC);
-			changeChannel(&trimmer, channelOption);
-		}
-	} else if(strcmp(commandBuffer,"tr+") == 0){
-		usart_writeMsg(&usart, "Se aumentó la tasa de refresco \n");
-	} else if(strcmp(commandBuffer,"tr-") == 0){
-		usart_writeMsg(&usart, "Se disminuyó la tasa de refresco \n");
-	} else if(strcmp(commandBuffer,"B") == 0){
-		usart_writeMsg(&usart, "Se inició el programa \n");
-		programStatus = 1;
-	} else if(strcmp(commandBuffer,"S") == 0){
-		usart_writeMsg(&usart, "Se detuvo el programa \n");
-		programStatus = 0;
 	}
 
-}
-
-uint8_t isLetter(char caracter) {
-	if ((caracter >= 'A' && caracter <= 'Z')
-			|| (caracter >= 'a' && caracter <= 'z')) {
-		return 1;
+	else if(strcmp(commandBuffer,"m") == 0){
+		usart_writeMsg(&usart, "Cambiar Modo \n\n");
+		botonEncoder ^= 1;
 	}
-	return 0;
-}
 
-uint8_t isNumber(char caracter) {
-	if (caracter >= '0' && caracter <= '9') {
-		return 1;
+
+	else if(strcmp(commandBuffer,"a") == 0){
+		if(botonEncoder){
+			uint8_t sumar = 0;
+			sumar = botonEncoder + 2;
+			caseEncoder(&sumar);
+			sprintf(bufferPrint, "Resolution %d\n\n",adcResolution);
+			usart_writeMsg(&usart, bufferPrint);
+		}
+		else{
+			uint8_t sumar = 0;
+			sumar = botonEncoder + 1;
+			caseEncoder(&sumar);
+			adcChannelaux = adcChannel + 1;
+			sprintf(bufferPrint, "Sensor %d\n\n",adcChannelaux);
+			usart_writeMsg(&usart, bufferPrint);
+		}
 	}
-	return 0;
+
+
+	else if(strcmp(commandBuffer,"d") == 0){
+		if(botonEncoder){
+			uint8_t restar = 0;
+			restar = botonEncoder + 1;
+			caseEncoder(&restar);
+			sprintf(bufferPrint, "Resolution %d\n\n",adcResolution);
+			usart_writeMsg(&usart, bufferPrint);
+		}
+		else{
+			uint8_t restar = 0;
+			restar = botonEncoder;
+			caseEncoder(&restar);
+			adcChannelaux = adcChannel + 1;
+			sprintf(bufferPrint, "Sensor %d\n\n",adcChannelaux);
+			usart_writeMsg(&usart, bufferPrint);
+		}
+	}
 }
 
-uint8_t isNotControl(char caracter){
-	if(caracter >= 31){
+uint8_t isLetterCode(char caracter){
+	if(caracter == 'a' || caracter == 'p' || caracter == 'm' || caracter == 'd'){
 		return 1;
 	}
 	return 0;
@@ -563,7 +681,7 @@ uint8_t isNotControl(char caracter){
 
 
 void Timer2_Callback(void) {
-	switch7segment = 1;
+	switchTransistores = 1;
 }
 
 void Timer4_Callback(void) {
@@ -581,15 +699,11 @@ void callback_ExtInt10(void) {
 	 * del encoder.
 	 */
 	botonEncoder ^= 1;
-	gpio_TooglePin(&userDir);
 }
 
 void callback_ExtInt3(void) {
-	//almacenamos la informacion recibida por los datos
-	dataEncoder = gpio_ReadPin(&userData);
+	ckEncoder = 1;
 
-	//Actualizamos la variable que nos dará la direccion de conteo para los casos.
-	direccionEncoder = (botonEncoder << 1) | (dataEncoder << 0);
 }
 
 void usart2_RxCallback(void){
