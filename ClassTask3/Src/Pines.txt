@@ -20,8 +20,8 @@ ADC channels:
 	
 USART 6 Pines:
 	- TX
-		- PA11
+		- PA11 AF08
 		- PC6
 	- RX
-		- PA12
+		- PA12 AF08
 		- PC7
