@@ -12,3 +12,16 @@ userSwitch/Transistores	 	= PinA0
 userData 					= PinB5
 userSWenc 					= PinA10
 userCKenc 					= PinB3
+
+ADC channels:
+	- channel 8
+	- channel 10
+	- channel 11
+	
+USART 6 Pines:
+	- TX
+		- PA11
+		- PC6
+	- RX
+		- PA12
+		- PC7
