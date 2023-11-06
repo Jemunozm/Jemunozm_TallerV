@@ -18,11 +18,6 @@ enum{
 	PWM_CHANNEL_4
 };
 
-enum{
-	PWM_DUTTY_0_PERCENT = 0,
-	PWM_DUTTY_100_PERCENT = 100
-};
-
 /**/
 typedef struct
 {
@@ -36,7 +31,7 @@ typedef struct
 typedef struct
 {
 	TIM_TypeDef		*ptrTIMx;	// Timer al que esta asociado el PWM
-	PWM_Config_t	config;	// Configuración inicial del PWM
+	PWM_Config_t	config;		// Configuración inicial del PWM
 }PWM_Handler_t;
 
 /* Prototipos de las funciones */
