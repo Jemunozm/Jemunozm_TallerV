@@ -101,23 +101,32 @@ enum {
 	restaChannel = 0, sumaChannel, restaResolucion, sumaResolucion
 };
 
+//Creació de un enum con las resoluciones del adc
 enum {
 	six = 0, eight, ten, twelve
 };
 
 int main(void) {
+	// llamamosala funcion que cuenta con toda la configuración
 	initSys();
+	// mandamos un holamundo de cuando la configuración estácargada
 	usart_writeMsg(&usart, "Hola mundo \r");
+	//Empezamos la primera cnversión del ADC.
 	adc_StartSingleConv();
 	while (1) {
 
+		// Variable que nos ayudará a iprimir el valor delchannel puesto que adc channel está en switch case.
 		adcChannelaux = adcChannel + 1;
 
 		//Actualizamos la variable que nos dará la direccion de conteo para los casos.
 		direccionEncoder = (botonEncoder << 1) | (dataEncoder << 0);
+		// guardamos el valor de la función que nos reorganiza las resoluciones.
 		resolutionOption = resolutionOptions(&adcResolution);
+		//Cambiamos LARESOLUCIÓN del adc siempre que haya un cambio.
 		changeResolution(&trimmer, resolutionOption);
+		// guardamos el valor de la función que nos reorganiza los canales.
 		channelOption = channelOptions(&adcChannel);
+		//Cambiamos el canal del adc siempre que haya un cambio.
 		changeChannel(&trimmer, channelOption);
 
 		// Realizamos unos determinados pasos cuando la bandera del encoder esté arriba.
@@ -128,27 +137,38 @@ int main(void) {
 			dataEncoder = gpio_ReadPin(&userData);
 			//Actualizamos la variable que nos dará la direccion de conteo para los casos.
 			direccionEncoder = (botonEncoder << 1) | (dataEncoder << 0);
-
+			//Actualizamos los cambios que nos hará elencoder con sus posibles casos.
 			caseEncoder(&direccionEncoder);
 		}
 		// Realizamos unos determinados pasos cuando la bandera del timer de impresión esté arriba.
 		if (bandera1 && adcComplete) {
+			//Bajamos las banderas de la interrupción.
 			bandera1 = 0;
 			adcComplete = 0;
+			//Escribimos el mensaje que se actualizará.
 			sprintf(bufferPrint, "ADC %d, Sensor: %d, Resolution: %d \n\n",
 					trimmer.adcData, adcChannelaux, adcResolution);
 			usart_writeMsg(&usart, bufferPrint);
+			// comenzamos la conversión para la proxima actualización.
 			adc_StartSingleConv();
 		}
-
+		// Cuando recibimos un dato se levanta la bandera.
 		if (rxData != 0) {
+			/* si este dato pertence a las letras claves de la tarea
+			 * se guardará en un buffer y se levantará otra bandera.
+			 */
 			if (isLetterCode(rxData)) {
 				strcat(commandBuffer, (char*) &rxData);
 				commandFlag = 1;
 			}
+			// bajamos la bandera de cuando se recibe un dato.
 			rxData = 0;
 		}
-
+		/*
+		 * Si la bandera está activa entraremos al buffer donde guardamos la letra
+		 * y lo comparamos dentro de lafuncion analizeCommand donde tenemos
+		 * las funciones para letra presionada ademas delmensaje que se debe enviar.
+		 */
 		if (commandFlag) {
 			analyzeCommand(commandBuffer);
 			for (int i = 0; i < sizeof(commandBuffer); i++) {
@@ -162,6 +182,7 @@ int main(void) {
 			switchTransistores = 0;
 			//Limpiamos los valores que se encuentran en el 7 segmentos.
 			writeClean();
+			// Limpiamos el led de direccion (dp)
 			gpio_WritePin(&userDir, RESET);
 			if (switch7segment) {
 				/*
@@ -176,6 +197,9 @@ int main(void) {
 				 * del timer este cambie de transistor
 				 */
 				switch7segment = 0;
+				/*Agregamos un if que nos encenderá el led de dirección
+				 * en caso de haber sido presionado.
+				 */
 				if (botonEncoder) {
 					gpio_WritePin(&userDir, SET);
 				}
@@ -193,6 +217,9 @@ int main(void) {
 				 * del timer este cambie de transistor
 				 */
 				switch7segment = 1;
+				/*Agregamos un if que nos encenderá el led de dirección
+				 * en caso de no haber sido presionado.
+				 */
 				if (!botonEncoder) {
 					gpio_WritePin(&userDir, SET);
 				}
@@ -498,6 +525,12 @@ void write7segments(uint8_t numero) {
 	gpio_WritePin(&userLedG, pinG);
 }
 
+/*
+ * Funcion que recibe como parametro una variable que
+ * contiene un numero para las opciones a elegir de resolución,
+ * para así enceder los leds que indican elpatron en el
+ * 7 segmentos.
+ */
 void writePattern(uint8_t pattern) {
 	switch (pattern) {
 	case six: {
@@ -526,6 +559,9 @@ void writePattern(uint8_t pattern) {
 	}
 }
 
+/*
+ * Funcion que limpia o resetea los pines del 7 segmentos.
+ */
 void writeClean(void) {
 	gpio_WritePin(&userLedA, RESET);
 	gpio_WritePin(&userLedB, RESET);
@@ -559,6 +595,9 @@ void changeChannel(ADC_Config_t *adcConfig, uint8_t channel) {
 	adc_StartSingleConv();
 }
 
+/* Función que de acuerdo al numero que tenemos en el encoder
+ * retornará el numero del channel para luego ser configurado.
+ */
 uint8_t channelOptions(uint8_t *numero) {
 	switch (*numero) {
 	case 0: {
@@ -580,6 +619,9 @@ uint8_t channelOptions(uint8_t *numero) {
 	}
 }
 
+/* Función que de acuerdo al numero que tenemos en el encoder
+ * retornará el numeor de la resolucion para luego ser configurado.
+ */
 uint8_t resolutionOptions(uint8_t *numero) {
 	switch (*numero) {
 	case 0: {
@@ -605,10 +647,14 @@ uint8_t resolutionOptions(uint8_t *numero) {
 	}
 }
 
+/*
+ * Función que contiene los posibles casos de funciones
+ * de acuerdo al valor tipo char que reciba como parametro.
+ */
 void analyzeCommand(char *buffer) {
 
 	if (strcmp(commandBuffer, "p") == 0) {
-		usart_writeMsg(&usart, "Testing, Testing!! \n");
+		usart_writeMsg(&usart, "Testing, Testing!! \n\n");
 	}
 
 	else if (strcmp(commandBuffer, "m") == 0) {
@@ -651,6 +697,10 @@ void analyzeCommand(char *buffer) {
 	}
 }
 
+/*
+ * Función que analiza si el valor que entra pertenece
+ * a un grupo de caracteres especificos.
+ */
 uint8_t isLetterCode(char caracter) {
 	if (caracter == 'a' || caracter == 'p' || caracter == 'm'
 			|| caracter == 'd') {
