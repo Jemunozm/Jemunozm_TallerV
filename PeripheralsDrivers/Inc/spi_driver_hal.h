@@ -10,6 +10,7 @@
 
 #include <stdio.h>
 #include "stm32f4xx.h"
+#include "gpio_driver_hal.h"
 
 
 enum
@@ -26,20 +27,8 @@ enum
 
 enum
 {
-	SPI_DATAFORMAT_MSBFIRST = 0,
-	SPI_DATAFORMAT_LSBFIRST,
-};
-
-enum
-{
-	SPI_CLOCKPOLARITY_OFF = 0,
-	SPI_CLOCKPOLARITY_ON
-};
-
-enum
-{
-	SPI_CLOCKPHASE_OFF = 0,
-	SPI_CLOCKPHASE_ON
+	SPI_MSBFIRST = 0,
+	SPI_LSBFIRST
 };
 
 enum
@@ -52,21 +41,8 @@ enum
 
 enum
 {
-	SPI_BIDIMODE_OFF = 0,
-	SPI_BIDIMODE_ON
-};
-
-enum
-{
-	SPI_BIDIOE_OFF = 0,
-	SPI_BIDIOE_ON
-};
-
-
-enum
-{
-	SPI_RXO_FULLDUPLEX = 0,
-	SPI_RXO_OUTDISABLED
+	SPI_FULLDUPLEX = 0,
+	SPI_OUTDISABLED
 };
 
 enum
@@ -102,12 +78,11 @@ enum
  */
 typedef struct
 {
-	uint8_t mode;
+	uint8_t mode; //Define los 4 modos que se puede configurar
 	uint8_t datasize;
-	uint8_t baudrate;
+	uint8_t baudrate;//De4fine la velocidad que maneja el SPI
 	uint8_t bitorder;
-	uint8_t polarity;
-	uint8_t phase;
+	uint8_t fullDupplexEnable;//Configura si solo recepción o bidireccional
 	uint8_t	enableIntRX;
 	uint8_t	enableIntTX;
 }SPI_Config_t;
@@ -125,14 +100,13 @@ typedef struct
 {
 	SPI_TypeDef		*ptrSPIx;
 	SPI_Config_t	SPI_Config;
-//	uint8_t			receptionBuffer[64];
-//	uint8_t			dataInputSize;
-//	uint8_t			transmisionBuffer[64];
-//	uint8_t			dataOutputSize;
+	GPIO_Handler_t	SPI_slavePin;
 }SPI_Handler_t;
 
 void spi_Config(SPI_Handler_t *ptrSpiHandler);
-//int  spi_WriteChar(SPI_Handler_t *ptrSpiHandler, int dataToSend );
-//void spi_writeMsg(SPI_Handler_t *ptrSpiHandler, char *msgToSend );
+void spi_transmit(SPI_Handler_t *ptrSpiHandler, uint8_t * ptrData, uint32_t dataSize);
+void spi_receive(SPI_Handler_t *ptrSpiHandler, uint8_t * ptrData, uint32_t dataSize);
+void spi_selectSlave(SPI_Handler_t *ptrSpiHandler);
+void spi_unSelectSlave(SPI_Handler_t *ptrSpiHandler);
 
 #endif /* SPI_DRIVER_HAL_H_ */
