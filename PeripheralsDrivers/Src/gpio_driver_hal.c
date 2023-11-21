@@ -238,6 +238,11 @@ void gpio_WritePin(GPIO_Handler_t *pPinHandler,uint8_t newState){
 	}
 }
 
+void gpio_WritePinFast(GPIO_Handler_t *pPinHandler,uint8_t newState){
+	pPinHandler->pGPIOx->ODR &= ~(SET << pPinHandler->pinConfig.GPIO_PinNumber);
+	pPinHandler->pGPIOx->ODR |= (newState << pPinHandler->pinConfig.GPIO_PinNumber);
+}
+
 /*
  * Función para leer el estado de un pin Especifico.
  */

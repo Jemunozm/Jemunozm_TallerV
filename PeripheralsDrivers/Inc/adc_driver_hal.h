@@ -10,6 +10,7 @@
 
 #include <stdint.h>
 #include "stm32f4xx.h"
+#include "pwm_driver_hal.h"
 
 enum{
 	CHANNEL_0 = 0,
@@ -65,6 +66,13 @@ enum{
 };
 
 enum{
+	TRIGGER_DISABLE = 0,
+	TRIGGER_RISING,
+	TRIGGER_FALLING,
+	TRIGGER_BOTH
+};
+
+enum{
 	SAMPLING_PERIOD_3_CYCLES = 0b000,
 	SAMPLING_PERIOD_15_CYCLES = 0b001,
 	SAMPLING_PERIOD_28_CYCLES = 0b010,
@@ -104,8 +112,27 @@ void adc_StopContinouosConv(void);
 void adc_peripheralOnOff(uint8_t state);
 uint16_t adc_GetValue(void);
 
+
+/*ADC multichannel
+ * primero elegimos un orden y el sampling para cada canal.
+ * luego el orden de la secuencia y la longitud (canales -1)
+ */
+
+/*
+ * Debemos crear un arreglo de config ADC
+ * configurar el sampling para cada elemento
+ * configurar la secuencia
+ * configurar la ongitud (numeroDeCanales -1)
+ * Activar SCAN, EOCS
+ * Organizar CallBack_ADC
+ */
+
 /* Configuraciones avanzadas del ADC */
-//void adc_ConfigMultichannel (ADC_Config_t *adcConfig, uint8_T numeroDeCanales);
-//void adc_ConfigTrigger(uint8_t sourceType, PWM_Handler_t *triggerSignal);
+void adc_ConfigMultichannel (ADC_Config_t adcConfig[16], uint8_t numeroDeCanales);
+/*
+ *
+ */
+
+void adc_ConfigTrigger(uint8_t sourceType, PWM_Handler_t *triggerSignal);
 
 #endif /* ADC_DRIVER_HAL_H_ */

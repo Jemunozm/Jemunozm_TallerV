@@ -123,7 +123,7 @@ uint32_t systick_GetTicks(void){
 	return countTicks;
 }
 
-void delay_ms(uint32_t wait_time_ms){
+void systick_Delay_ms(uint32_t wait_time_ms){
 	// Captura  el primer valor de tiempo para comparar.
 	ticks_start = systick_GetTicks();
 

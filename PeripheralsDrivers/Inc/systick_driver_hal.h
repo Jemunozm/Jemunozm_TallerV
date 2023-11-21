@@ -38,7 +38,7 @@ void systick_Config(Systick_Handler_t *pSystickHandler);
 void systick_SetState(Systick_Handler_t *pSystickHandler, uint8_t newState);
 uint32_t systick_GetTicks();
 
-void delay_ms(uint32_t wait_time_ms);
+void systick_Delay_ms(uint32_t wait_time_ms);
 
 /* Esta función debe ser sobre-escrita en el main para que el sistema funcione */
 void systick_Callback(void);

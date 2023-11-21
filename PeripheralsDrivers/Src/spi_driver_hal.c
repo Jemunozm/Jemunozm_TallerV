@@ -8,10 +8,6 @@
 #include "stm32f4xx.h"
 #include "spi_driver_hal.h"
 
-
-
-
-
 ///* === Headers for private functions === */
 static void spi_enable_clock_peripheral(SPI_Handler_t *ptrSpiHandler);
 static void spi_config_datasize(SPI_Handler_t *ptrSpiHandler);
@@ -22,7 +18,8 @@ static void spi_config_duplex(SPI_Handler_t *ptrSpiHandler);
 static void spi_config_interrupt(SPI_Handler_t *ptrSpiHandler);
 
 void spi_Config(SPI_Handler_t *ptrSpiHandler){
-
+	/* 0. Cargamos el pin del Slave que vamos a utilizar */
+	gpio_Config(&ptrSpiHandler->SPI_slavePin);
 	/* 1. Activamos la señal de reloj para el modulo SPI seleccionado */
 	spi_enable_clock_peripheral(ptrSpiHandler);
 	/* 2. Limpiamos el registro de configuración*/
@@ -160,40 +157,39 @@ static void spi_config_datasize(SPI_Handler_t *ptrSpiHandler){
 	}
 	}
 }
-
-void spi_tansmit(SPI_Handler_t ptrSpiHandler, uint8_t * ptrData, uint32_t dataSize){
+void spi_transmit(SPI_Handler_t *ptrSpiHandler, uint8_t * ptrData, uint32_t dataSize){
 	uint8_t auxData;
 	(void) auxData;
 
 	while(dataSize > 0){
 		//Esperamos a que el buffer esté vacío
-		while(!(ptrSpiHandler.ptrSPIx->SR & SPI_SR_TXE)){
+		while(!(ptrSpiHandler->ptrSPIx->SR & SPI_SR_TXE)){
 			__NOP();
 		}
 
-		if(ptrSpiHandler.SPI_Config.datasize == SPI_DATAFRAME_8BIT){
-			ptrSpiHandler.ptrSPIx->DR = (uint8_t) (0xFF & *ptrData);
+		if(ptrSpiHandler->SPI_Config.datasize == SPI_DATAFRAME_8BIT){
+			ptrSpiHandler->ptrSPIx->DR = (uint8_t) (0xFF & *ptrData);
 		}else{
-			ptrSpiHandler.ptrSPIx->DR = (uint16_t) (0xFF & *ptrData);
+			ptrSpiHandler->ptrSPIx->DR = (uint16_t) (0xFFFF & *ptrData);
 		}
 		// Actualizamos el puntero y el número de datos que faltan por enviar
 		ptrData++;
 		dataSize--;
 	}
 	// Esperamos de nuevo a que el buffer esté vacío
-	while(!(ptrSpiHandler.ptrSPIx->SR & SPI_SR_TXE)){
+	while(!(ptrSpiHandler->ptrSPIx->SR & SPI_SR_TXE)){
 		__NOP();
 	}
 
 	//Esperamos a que la bandera de ocupado (busy) baje (observar que la logica cambia)
-	while(ptrSpiHandler.ptrSPIx->SR & SPI_SR_BSY){
+	while(ptrSpiHandler->ptrSPIx->SR & SPI_SR_BSY){
 		__NOP();
 	}
 
 	/* Debemos limpiar la bandera de OverRun (que a veces se levanta).
 	 * PAra esto debemos leer elDRy luego leer el SR del modulo SPI (pag 599)*/
-	auxData = ptrSpiHandler.ptrSPIx->DR;
-	auxData = ptrSpiHandler.ptrSPIx->SR;
+	auxData = ptrSpiHandler->ptrSPIx->DR;
+	auxData = ptrSpiHandler->ptrSPIx->SR;
 }
 
 void spi_receive(SPI_Handler_t *ptrSpiHandler, uint8_t * ptrData, uint32_t dataSize){

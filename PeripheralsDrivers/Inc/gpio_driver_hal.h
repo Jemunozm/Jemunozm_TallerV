@@ -162,6 +162,7 @@ typedef struct
 void gpio_Config (GPIO_Handler_t *pGPIOHandler);
 void gpio_WritePin(GPIO_Handler_t *pPinHandler, uint8_t newState);
 void gpio_TooglePin(GPIO_Handler_t *pPinHandler);
+void gpio_WritePinFast(GPIO_Handler_t *pPinHandler,uint8_t newState);
 uint8_t gpio_ReadPin(GPIO_Handler_t *pPinHandler);
 
 
