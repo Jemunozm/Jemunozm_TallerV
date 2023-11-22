@@ -53,45 +53,52 @@ PWM_Handler_t frecuenciaM = { 0 };
 //Definimos el pin USART que vamos a utilizar.
 USART_Handler_t usart = { 0 };
 uint8_t rxData = 0;
-char bufferData[64] = { 0 };
 char bufferMsg[64] = {0};
 
-//ADC_Config_t *sensores[16]={&sensor1,&sensor2,&sensor3};
+//Definimos el que alamcenará los sensores con hanlder ADC
 ADC_Config_t sensores[16]={0};
-uint8_t numeroDeSensores = 3;
-uint16_t tamañodatos = 512;
+
+//Definimos los arreglos para guardar cada uno de los datos de cada sensor
 float32_t sensor1data[512] = {0};
 float32_t sensor2data[512] = {0};
 float32_t sensor3data[512] = {0};
+
+uint8_t numeroDeSensores = 3;
+uint16_t tamañodatos = 512;
 uint16_t sensorSize = 512;
-float32_t sensordataaux[512] = {0};
+
+//Bandera para hacer el llenado de datos
 uint16_t data = 0;
 uint16_t cont = 0;
+
+//Variales globales para almacenar los datos maximos y minimos obtenidos
 float32_t valorMaximo = 0;
 float32_t valorMinimo = 0;
 uint32_t indiceMaximo = 0;
 uint32_t indiceMinimo = 0;
 
-
+//Punteros a losarreglos de datos.
 float32_t *ptrSensor1 = sensor1data;
 float32_t *ptrSensor2 = sensor2data;
 float32_t *ptrSensor3 = sensor3data;
 
-uint32_t dataSize = 0;
 
-/* Elementos para generar una selal */
 #define SINE_DATA_SIZE 512//Tamaño del arreglo de datos
-float32_t fs = 16000000/(16*25); //frecuencia de muestreo
-float32_t sineSignal[SINE_DATA_SIZE];
+
+//frecuencia de muestreo teniendo en cuenta los valores puestos en el prescaler y el periodo.
+float32_t fs = 16000000/(16*25);
+//Defino un arreglo alamcenar los datos de la transofrmada de fourier
 float32_t fft_power1[SINE_DATA_SIZE/2];
 float32_t fft_power2[SINE_DATA_SIZE/2];
 float32_t fft_power3[SINE_DATA_SIZE/2];
 float32_t transformedSignal1[SINE_DATA_SIZE];
 float32_t transformedSignal2[SINE_DATA_SIZE];
 float32_t transformedSignal3[SINE_DATA_SIZE];
-float32_t *ptrSineSignal;
 
+//bandera para determinar el tipo de transformada.
 uint32_t ifftFlag = 0;
+
+//Definiciones de estados para verificar el correcto uso de latransformada.
 arm_rfft_fast_instance_f32 config_Rfft_fast_f32;
 arm_status status = ARM_MATH_ARGUMENT_ERROR;
 arm_status statusInitFFT = ARM_MATH_ARGUMENT_ERROR;
@@ -99,8 +106,6 @@ uint16_t fftSize = 512;
 
 //Definicion de las cabeceras de las funciones  del main
 void initSystem(void);
-void createSignal(void);
-
 /*
  * Funcion principal del sistema
  */
@@ -113,296 +118,160 @@ int main(void){
 
 	/* Loop forever*/
 	while (1){
-	/*
-	* Crear la señal
-	*/
-	if (rxData == 'a'){
-		startPwmSignal(&frecuenciaM);
-		while(!(data==(tamañodatos-1))){
-			__NOP();
+		/*
+		 * Creamos un conjunto de opciones de acuerdo al dato recibido por usart
+		 * caso a = canal 1
+		 * caso b = canal 2
+		 * caso c = canal 3
+		 */
+		if (rxData == 'a'){
+
+			//Encedemos la señal PWM para empezar el muestreo de datos
+			startPwmSignal(&frecuenciaM);
+
+			//En este while me quedo hasta que no lleno completamente los arreglos no decido pasar al siguiente paso.
+			while(!(data==(tamañodatos-1))){
+				__NOP();
+			}
+			//Una vez los datos esten completos, es decir el arreglo esté llenó detengo la señal PWM para que no tome mas datos.
+			stopPwmSignal(&frecuenciaM);
+
+			//Sacamos los valores maximos y minimos del arreglo de datos tomados
+			arm_max_f32(ptrSensor1, sensorSize, &valorMaximo, &indiceMaximo);
+			arm_min_f32(ptrSensor1, sensorSize, &valorMinimo, &indiceMinimo);
+
+			//Bajamos nuestra bandera que nos indica cuando elarreglo se llenó
+			data=0;
+
+			//Inicialiamos la transformada de furier y retonramos su estado una vez esté completado.
+			statusInitFFT = arm_rfft_fast_init_f32(&config_Rfft_fast_f32, fftSize);
+
+			//Hasta que no esté inicializado completemente se debe esperar.
+			while(!(statusInitFFT == ARM_MATH_SUCCESS)){
+				__NOP();
+			}
+
+			/*
+			 * Le aplicamos la transformada de fourier al arreglo de los datos del sensor1 (sensor1data)
+			 * y los retornamos en el arreglo de trasnformedSingal1, teniendo en cuenta la flag
+			 * para que se transformada de fourier y no la transformada inversa.
+			 */
+			arm_rfft_fast_f32(&config_Rfft_fast_f32, sensor1data, transformedSignal1, ifftFlag);
+
+			/*
+			 * le sacamos el valor absoluto a los datos tomados de la transformada para asegurarnos de no tener ningun numero negativo.
+			 */
+			arm_abs_f32(transformedSignal1, sensor1data, fftSize);
+
+			//Convertimos el primer dato en 0 debido a que por lo general da una frecuencia alta que podría estar asociada al offset.
+			transformedSignal1[0] = 0;
+
+			//Función para eliminar los valores complejos de la transformada, por lo que el nuevo arreglo será la mitad del original.
+			arm_cmplx_mag_f32(transformedSignal1, fft_power1, SINE_DATA_SIZE/2);
+
+			//Declaramos variables locales para imprimir la frecuencia.
+			float32_t   maxValue;
+			uint32_t    maxIndex;
+
+			//Obtenemos el valor el valor maximo y su indice.
+			arm_max_f32(fft_power1, SINE_DATA_SIZE/2, &maxValue, &maxIndex);
+
+			//Imprimimos el valor maximo del primer arreglo de datos, es decir mas alto de la señal tomada.
+			sprintf(bufferMsg, "max muestra: %.1f\r\n", valorMaximo);
+			usart_writeMsg(&usart, bufferMsg);
+
+			//Imprimimos el valor minimo del primer arreglo de datos, es decir mas bajo de la señal tomada.
+			sprintf(bufferMsg, "min muestra: %.1f\r\n", valorMinimo);
+			usart_writeMsg(&usart, bufferMsg);
+
+			//Imprimimos la frecuencia dominante teniendo en cuenta la ecuación
+			// (indice del valor maximo * (frecuecnia de muestréo/tamaño de la muestra))/2
+			sprintf(bufferMsg, "frequency: %f\r\n\n", ((maxIndex) * fs/SINE_DATA_SIZE)/2);
+			usart_writeMsg(&usart, bufferMsg);
+			//Restauramosel estado de inicialización de la trasnfomada.
+			statusInitFFT = ARM_MATH_ARGUMENT_ERROR;
+
+			rxData = '\0';
 		}
-//		for(uint16_t i = 0; i<512;i++){
-//			sensordataaux[i] = sensor1data[i];
-//		}
-		stopPwmSignal(&frecuenciaM);
+		//Los comentarios de este caso son similares al caso anterior soloq ue con variables y arreglos diferentes.
+		if (rxData == 'b'){
+			startPwmSignal(&frecuenciaM);
+			while(!(data==(tamañodatos-1))){
+				__NOP();
+			}
+			stopPwmSignal(&frecuenciaM);
+			arm_max_f32(ptrSensor2, sensorSize, &valorMaximo, &indiceMaximo);
+			arm_min_f32(ptrSensor2, sensorSize, &valorMinimo, &indiceMinimo);
+			data=0;
 
-		arm_max_f32(ptrSensor1, sensorSize, &valorMaximo, &indiceMaximo);
-		arm_min_f32(ptrSensor1, sensorSize, &valorMinimo, &indiceMinimo);
-		data=0;
+			statusInitFFT = arm_rfft_fast_init_f32(&config_Rfft_fast_f32, fftSize);
 
-		statusInitFFT = arm_rfft_fast_init_f32(&config_Rfft_fast_f32, fftSize);
+			while(!(statusInitFFT == ARM_MATH_SUCCESS)){
+				__NOP();
+			}
 
-		while(!(statusInitFFT == ARM_MATH_SUCCESS)){
-			__NOP();
+			arm_rfft_fast_f32(&config_Rfft_fast_f32, sensor2data, transformedSignal2, ifftFlag);
+
+			arm_abs_f32(transformedSignal2, sensor2data, fftSize);
+
+			transformedSignal2[0] = 0;
+			arm_cmplx_mag_f32(transformedSignal2, fft_power2, SINE_DATA_SIZE/2);
+
+			float32_t   maxValue;
+			uint32_t    maxIndex;
+
+			arm_max_f32(fft_power2, SINE_DATA_SIZE/2, &maxValue, &maxIndex);
+
+			sprintf(bufferMsg, "max muestra: %.1f\n", valorMaximo);
+			usart_writeMsg(&usart, bufferMsg);
+
+			sprintf(bufferMsg, "min muestra: %.1f\n", valorMinimo);
+			usart_writeMsg(&usart, bufferMsg);
+
+			sprintf(bufferMsg, "frequency: %f\r\n\n", ((maxIndex) * fs/SINE_DATA_SIZE)/2);
+			usart_writeMsg(&usart, bufferMsg);
+
+			rxData = '\0';
 		}
+		//Los comentarios de este caso son similares al caso anterior soloq ue con variables y arreglos diferentes.
+		if (rxData == 'c'){
+			startPwmSignal(&frecuenciaM);
 
-		arm_rfft_fast_f32(&config_Rfft_fast_f32, sensor1data, transformedSignal1, ifftFlag);
+			while(!(data==(tamañodatos-1))){
+				__NOP();
+			}
+			stopPwmSignal(&frecuenciaM);
+			arm_max_f32(ptrSensor3, sensorSize, &valorMaximo, &indiceMaximo);
+			arm_min_f32(ptrSensor3, sensorSize, &valorMinimo, &indiceMinimo);
+			data=0;
 
-		arm_abs_f32(transformedSignal1, sensor1data, fftSize);
+			statusInitFFT = arm_rfft_fast_init_f32(&config_Rfft_fast_f32, fftSize);
 
-		transformedSignal1[0] = 0;
-		arm_cmplx_mag_f32(transformedSignal1, fft_power1, SINE_DATA_SIZE/2);
+			while(!(statusInitFFT == ARM_MATH_SUCCESS)){
+				__NOP();
+			}
+			arm_rfft_fast_f32(&config_Rfft_fast_f32, sensor3data, transformedSignal3, ifftFlag);
 
-		float32_t   maxValue;
-		uint32_t    maxIndex;
-		float32_t	minValue;
-		uint32_t 	minIndex;
+			arm_abs_f32(transformedSignal3, sensor3data, fftSize);
 
-		arm_max_f32(fft_power1, SINE_DATA_SIZE/2, &maxValue, &maxIndex);
+			transformedSignal3[0] = 0;
+			arm_cmplx_mag_f32(transformedSignal3, fft_power3, SINE_DATA_SIZE/2);
 
-		arm_min_f32(fft_power1, SINE_DATA_SIZE/2, &minValue, &minIndex);
+			float32_t   maxValue;
+			uint32_t    maxIndex;
+			arm_max_f32(fft_power3, SINE_DATA_SIZE/2, &maxValue, &maxIndex);
 
-		sprintf(bufferMsg, "max muestra: %.1f\r\n", valorMaximo);
-		usart_writeMsg(&usart, bufferMsg);
+			sprintf(bufferMsg, "max muestra: %.1f\n", valorMaximo);
+			usart_writeMsg(&usart, bufferMsg);
 
-		sprintf(bufferMsg, "min muestra: %.1f\r\n", valorMinimo);
-		usart_writeMsg(&usart, bufferMsg);
+			sprintf(bufferMsg, "min muestra: %.1f\n", valorMinimo);
+			usart_writeMsg(&usart, bufferMsg);
 
-		sprintf(bufferMsg, "frequency: %f\r\n\n", ((maxIndex) * fs/SINE_DATA_SIZE)/2);
-		usart_writeMsg(&usart, bufferMsg);
-		statusInitFFT = ARM_MATH_ARGUMENT_ERROR;
+			sprintf(bufferMsg, "frequency: %f\r\n\n", ((maxIndex) * fs/SINE_DATA_SIZE)/2);
+			usart_writeMsg(&usart, bufferMsg);
 
-		rxData = '\0';
-	}
-	if (rxData == 'b'){
-		startPwmSignal(&frecuenciaM);
-		while(!(data==(tamañodatos-1))){
-			__NOP();
+			rxData = '\0';
 		}
-		stopPwmSignal(&frecuenciaM);
-		arm_max_f32(ptrSensor2, sensorSize, &valorMaximo, &indiceMaximo);
-		arm_min_f32(ptrSensor2, sensorSize, &valorMinimo, &indiceMinimo);
-		data=0;
-
-		statusInitFFT = arm_rfft_fast_init_f32(&config_Rfft_fast_f32, fftSize);
-
-		while(!(statusInitFFT == ARM_MATH_SUCCESS)){
-			__NOP();
-		}
-
-		arm_rfft_fast_f32(&config_Rfft_fast_f32, sensor2data, transformedSignal2, ifftFlag);
-
-		arm_abs_f32(transformedSignal2, sensor2data, fftSize);
-
-		transformedSignal2[0] = 0;
-	    arm_cmplx_mag_f32(transformedSignal2, fft_power2, SINE_DATA_SIZE/2);
-
-	    float32_t   maxValue;
-		uint32_t    maxIndex;
-		float32_t	minValue;
-		uint32_t 	minIndex;
-
-	    arm_max_f32(fft_power2, SINE_DATA_SIZE/2, &maxValue, &maxIndex);
-
-	    arm_min_f32(fft_power2, SINE_DATA_SIZE/2, &minValue, &minIndex);
-
-	    sprintf(bufferMsg, "max muestra: %.1f\n", valorMaximo);
-	    usart_writeMsg(&usart, bufferMsg);
-
-	    sprintf(bufferMsg, "min muestra: %.1f\n", valorMinimo);
-	    usart_writeMsg(&usart, bufferMsg);
-
-	    sprintf(bufferMsg, "frequency: %f\r\n\n", ((maxIndex) * fs/SINE_DATA_SIZE)/2);
-	    usart_writeMsg(&usart, bufferMsg);
-
-		rxData = '\0';
-	}
-	if (rxData == 'c'){
-		startPwmSignal(&frecuenciaM);
-
-		while(!(data==(tamañodatos-1))){
-			__NOP();
-		}
-		stopPwmSignal(&frecuenciaM);
-		arm_max_f32(ptrSensor3, sensorSize, &valorMaximo, &indiceMaximo);
-		arm_min_f32(ptrSensor3, sensorSize, &valorMinimo, &indiceMinimo);
-		data=0;
-
-		statusInitFFT = arm_rfft_fast_init_f32(&config_Rfft_fast_f32, fftSize);
-
-		while(!(statusInitFFT == ARM_MATH_SUCCESS)){
-			__NOP();
-		}
-		arm_rfft_fast_f32(&config_Rfft_fast_f32, sensor3data, transformedSignal3, ifftFlag);
-
-		arm_abs_f32(transformedSignal3, sensor3data, fftSize);
-
-		transformedSignal3[0] = 0;
-	    arm_cmplx_mag_f32(transformedSignal3, fft_power3, SINE_DATA_SIZE/2);
-
-	    float32_t   maxValue;
-		uint32_t    maxIndex;
-		float32_t	minValue;
-		uint32_t 	minIndex;
-
-	    arm_max_f32(fft_power3, SINE_DATA_SIZE/2, &maxValue, &maxIndex);
-
-	    arm_min_f32(fft_power3, SINE_DATA_SIZE/2, &minValue, &minIndex);
-
-	    sprintf(bufferMsg, "max muestra: %.1f\n", valorMaximo);
-	    usart_writeMsg(&usart, bufferMsg);
-
-	    sprintf(bufferMsg, "min muestra: %.1f\n", valorMinimo);
-	    usart_writeMsg(&usart, bufferMsg);
-
-	    sprintf(bufferMsg, "frequency: %f\r\n\n", ((maxIndex) * fs/SINE_DATA_SIZE)/2);
-	    usart_writeMsg(&usart, bufferMsg);
-
-		rxData = '\0';
-	}
-
-//
-//	if(rxData == 'A'){
-//		for(uint16_t i = 0; i < 512; i++){
-//			sprintf(bufferMsg,	"%.1f\t %.1f\r\n", 10*sensordataaux[i],fft_power1[i] );
-//			usart_writeMsg(&usart, bufferMsg);
-//		}
-//		data=0;
-//		rxData = '\0';
-//	}
-
-//
-//	if (rxData == 'I'){
-//
-//		statusInitFFT = arm_rfft_fast_init_f32(&config_Rfft_fast_f32, fftSize);
-//
-//		if(statusInitFFT == ARM_MATH_SUCCESS){
-//			sprintf(bufferMsg, "Initialization...SUCCESS! \n");
-//			usart_writeMsg(&usart, bufferMsg);
-//		}
-//
-//		rxData = '\0';
-//	}
-
-//	if (rxData == 'F'){
-//
-//		statusInitFFT = arm_rfft_fast_init_f32(&config_Rfft_fast_f32, fftSize);
-//
-//		if(statusInitFFT == ARM_MATH_SUCCESS){
-//
-//			arm_rfft_fast_f32(&config_Rfft_fast_f32, sensor1data, transformedSignal1, ifftFlag);
-//
-//			arm_abs_f32(transformedSignal1, sensor1data, fftSize);
-//
-//			arm_rfft_fast_f32(&config_Rfft_fast_f32, sensor2data, transformedSignal2, ifftFlag);
-//
-//			arm_abs_f32(transformedSignal2, sensor2data, fftSize);
-//
-//			arm_rfft_fast_f32(&config_Rfft_fast_f32, sensor3data, transformedSignal3, ifftFlag);
-//
-//			arm_abs_f32(transformedSignal3, sensor3data, fftSize);
-//
-//		}
-//		else{
-//			usart_writeMsg(&usart, "FFT NOT INITIALIZED...\n");
-//		}
-//		rxData = '\0';
-//	}
-//	if (rxData == 'D'){
-//
-//		transformedSignal1[0] = 0;
-//	    arm_cmplx_mag_f32(transformedSignal1, fft_power1, SINE_DATA_SIZE/2);
-//	    for (int i = 1; i < SINE_DATA_SIZE/2; i++) {
-//	        sprintf(bufferMsg, "%i\tfrq: %.1f\tenergy %.6f\r\n", i, i * fs/SINE_DATA_SIZE, fft_power1[i]);
-//			usart_writeMsg(&usart, bufferMsg);
-//	    }
-//
-//		transformedSignal2[0] = 0;
-//	    arm_cmplx_mag_f32(transformedSignal2, fft_power2, SINE_DATA_SIZE/2);
-//	    for (int i = 1; i < SINE_DATA_SIZE/2; i++) {
-//	        sprintf(bufferMsg, "%i\tfrq: %.1f\tenergy %.6f\r\n", i, i * fs/SINE_DATA_SIZE, fft_power2[i]);
-//			usart_writeMsg(&usart, bufferMsg);
-//	    }
-//
-//		transformedSignal3[0] = 0;
-//	    arm_cmplx_mag_f32(transformedSignal3, fft_power3, SINE_DATA_SIZE/2);
-//	    for (int i = 1; i < SINE_DATA_SIZE/2; i++) {
-//	        sprintf(bufferMsg, "%i\tfrq: %.1f\tenergy %.6f\r\n", i, i * fs/SINE_DATA_SIZE, fft_power3[i]);
-//			usart_writeMsg(&usart, bufferMsg);
-//	    }
-//	    rxData = '\0';
-//	}
-//	if (rxData == 'X'){
-//	    float32_t   maxValue;
-//	    uint32_t    maxIndex;
-//	    float32_t	minValue;
-//	    uint32_t 	minIndex;
-//
-//	    arm_max_f32(fft_power1, SINE_DATA_SIZE/2, &maxValue, &maxIndex);
-//	    sprintf(bufferMsg, "\r\n");
-//	    usart_writeMsg(&usart, bufferMsg);
-//
-//	    arm_min_f32(fft_power1, SINE_DATA_SIZE/2, &minValue, &minIndex);
-//	    sprintf(bufferMsg, "\r\n");
-//	    usart_writeMsg(&usart, bufferMsg);
-//
-//	    sprintf(bufferMsg, "max power: %f\r\n", maxValue);
-//	    usart_writeMsg(&usart, bufferMsg);
-//
-//	    sprintf(bufferMsg, "min power: %f\r\n", minValue);
-//	    usart_writeMsg(&usart, bufferMsg);
-//
-//	    sprintf(bufferMsg, "max index: %ld\r\n", maxIndex);
-//	    usart_writeMsg(&usart, bufferMsg);
-//
-//	    sprintf(bufferMsg, "min index: %ld\r\n", minIndex);
-//	    usart_writeMsg(&usart, bufferMsg);
-//
-//	    sprintf(bufferMsg, "frequency: %f\r\n", ((maxIndex/2) * fs/SINE_DATA_SIZE));
-//	    usart_writeMsg(&usart, bufferMsg);
-//
-//
-//
-//	    arm_max_f32(fft_power2, SINE_DATA_SIZE/2, &maxValue, &maxIndex);
-//	    sprintf(bufferMsg, "\r\n");
-//	    usart_writeMsg(&usart, bufferMsg);
-//
-//	    arm_min_f32(fft_power2, SINE_DATA_SIZE/2, &minValue, &minIndex);
-//	    sprintf(bufferMsg, "\r\n");
-//	    usart_writeMsg(&usart, bufferMsg);
-//
-//	    sprintf(bufferMsg, "max power: %f\r\n", maxValue);
-//	    usart_writeMsg(&usart, bufferMsg);
-//
-//	    sprintf(bufferMsg, "min power: %f\r\n", minValue);
-//	    usart_writeMsg(&usart, bufferMsg);
-//
-//	    sprintf(bufferMsg, "max index: %ld\r\n", maxIndex);
-//	    usart_writeMsg(&usart, bufferMsg);
-//
-//	    sprintf(bufferMsg, "min index: %ld\r\n", minIndex);
-//	    usart_writeMsg(&usart, bufferMsg);
-//
-//	    sprintf(bufferMsg, "frequency: %f\r\n", ((maxIndex/2) * fs/SINE_DATA_SIZE));
-//	    usart_writeMsg(&usart, bufferMsg);
-//
-//
-//
-//	    arm_max_f32(fft_power3, SINE_DATA_SIZE/2, &maxValue, &maxIndex);
-//	    sprintf(bufferMsg, "\r\n");
-//	    usart_writeMsg(&usart, bufferMsg);
-//
-//	    arm_min_f32(fft_power3, SINE_DATA_SIZE/2, &minValue, &minIndex);
-//	    sprintf(bufferMsg, "\r\n");
-//	    usart_writeMsg(&usart, bufferMsg);
-//
-//	    sprintf(bufferMsg, "max power: %f\r\n", maxValue);
-//	    usart_writeMsg(&usart, bufferMsg);
-//
-//	    sprintf(bufferMsg, "min power: %f\r\n", minValue);
-//	    usart_writeMsg(&usart, bufferMsg);
-//
-//	    sprintf(bufferMsg, "max index: %ld\r\n", maxIndex);
-//	    usart_writeMsg(&usart, bufferMsg);
-//
-//	    sprintf(bufferMsg, "min index: %ld\r\n", minIndex);
-//	    usart_writeMsg(&usart, bufferMsg);
-//
-//	    sprintf(bufferMsg, "frequency: %f\r\n", ((maxIndex/2) * fs/SINE_DATA_SIZE));
-//	    usart_writeMsg(&usart, bufferMsg);
-//	    rxData = '\0';
-//	}
-
 	}
 	return 0;
 }
@@ -521,6 +390,11 @@ void usart2_RxCallback(void){
 }
 void adc_CompleteCallback(void) {
 
+	/*
+	 * Hacemos un switch case para cada caso en el cual vamos a guardar los datos de los arreglos
+	 * de acuerdo a cada caso guardamos datos es su posición indicada y una vez se presente el ultimo caso reinciamos
+	 * el switch case pero sumamos 1 en elconteo de datos generales por arreglo.
+	 */
 
 	switch(cont){
 	case 0:{
