@@ -1,0 +1,32 @@
+//Definimos los pines que se van a utilizar.
+userLed/Timer 				= PinA5
+userLed1/A					= PinC6
+userLed2/B 					= PinA7
+userLed3/C					= PinC8
+userLed4/D					= PinA9
+userLed5/E					= PinC9
+userLed6/F 					= PinA6
+userLed7/G 					= PinA8
+userDir/LedEstado			= PinC5
+userSwitch/Transistores	 	= PinA0
+userData 					= PinB5
+userSWenc 					= PinA10
+userCKenc 					= PinB3
+
+ADC channels:
+	- channel 8
+	- channel 10
+	- channel 11
+	
+USART 6 Pines:
+	- TX
+		- PA11 AF08
+		- PC6
+	- RX
+		- PA12 AF08
+		- PC7
+		
+RGB TIM 4 AF01
+	- RED PB7 channel 2
+	- Green PB8 channel 3
+	- BLUE PB9	channel 4
