@@ -81,7 +81,15 @@ void tft_Config(void);
 void setRotation(uint8_t rotation);
 void fillScreen(uint16_t color);
 uint16_t color565(uint8_t r, uint8_t g, uint8_t b);
-void drawCircle(int16_t x0, int16_t y0, int16_t r, uint16_t color);
-
+void drawCircle(uint16_t x0, uint16_t y0, uint16_t r, uint16_t color);
+void drawPixel(uint16_t x, uint16_t y, uint16_t color);
+void drawFastHLine(uint16_t x, uint16_t y, uint16_t h, uint16_t color);
+void drawFastVLine(uint16_t x, uint16_t y, uint16_t h, uint16_t color);
+void fillCircle(uint16_t x0, uint16_t y0, uint16_t r, uint16_t color);
+void fillCircleHelper(uint16_t x0, uint16_t y0, uint16_t r, uint8_t cornername, uint16_t delta, uint16_t color);
+void drawRect(uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t color);
+void fillRect(uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t color);
+void drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, uint16_t color);
+void drawLineA(uint16_t x0, uint16_t y0, uint16_t r, float angulo, uint16_t color);
 
 #endif /* TFT_ILI9486_H_ */
