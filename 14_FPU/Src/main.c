@@ -72,10 +72,20 @@ uint16_t color;
 
 void srand_custom(uint16_t new_seed);
 void stickmanConstructor(uint16_t px, uint16_t py);
+
 void stickmanShape(uint16_t px, uint16_t py,float AnguloTorso, float AnguloCadera, float AnguloPiernaDerecha, float AnguloPiernaIzquierda,
 		float AnguloAntepiernaDerecha, float AnguloAntepiernaIzquierda, float AnguloBrazoDerecho, float AnguloBrazoIzquierdo,
 		float AnguloAntebrazoDerecha, float AnguloAntebrazoIzquierda, uint16_t color);
 void cleanShape(uint16_t color);
+
+void stickmanArms(uint16_t px, uint16_t py, float AnguloBrazoDerecho, float AnguloBrazoIzquierdo,
+		float AnguloAntebrazoDerecha, float AnguloAntebrazoIzquierda, uint16_t color);
+void cleanArms(uint16_t color);
+void cleanArmsT(uint16_t color);
+
+void stickmanLegs(uint16_t px, uint16_t py, float AnguloPiernaDerecha, float AnguloPiernaIzquierda,
+		float AnguloAntepiernaDerecha, float AnguloAntepiernaIzquierda, uint16_t color);
+void cleanLegs(uint16_t color);
 
 int main(void) {
 
@@ -92,6 +102,9 @@ int main(void) {
 	setRotation(3);
 	fillScreen(0x7FFF);
 	while (1) {
+
+		fillRect(0,260,480,320,0xFFFF);
+		fillRect(0,0,480,60,0x0000);
 		uint16_t px = 0;
 		uint16_t py = 0;
 		px = 240;
@@ -159,9 +172,27 @@ int main(void) {
 //		//Antebrazos
 //		drawLineA(inicioAntebrazoIzquierdaX,inicioAntebrazoIzquierdaY,largoAntebrazo,anguloAntebrazoIzquierda,color);
 //		drawLineA(inicioAntebrazoDerechaX,inicioAntebrazoDerechaY,largoAntebrazo,anguloAntebrazoDerecha,color);
-
-		stickmanShape(px, py, -90, 90, 120, 60, 90, 85, 180, -30, 240, -30, 0xFF6D);
 		cleanShape(0x7FFF);
+		stickmanShape(px, py, 210, 90, 120, 60, 90, 85, 180, -30, 240, -30, 0xFF6D);
+//		systick_Delay_ms(50);
+//		cleanShape(0x7FFF);
+		cleanArmsT(0x7FFf);
+
+		stickmanShape(px, py, -90, 90, 120, 60, 90, 85,	120, 90, 60, 90, 0xFF6D);
+//		systick_Delay_ms(50);
+		cleanArmsT(0x7FFf);
+
+		stickmanShape(px, py, -30, 90, 120, 60, 90, 85, 210, 0, 210, -60, 0xFF6D);
+//		systick_Delay_ms(50);
+		cleanArmsT(0x7FFf);
+
+		stickmanShape(px, py, -90, 90, 120, 60, 90, 85,	120, 60, 90, 90, 0xFF6D);
+//		systick_Delay_ms(50);
+
+
+		systick_Delay_ms(500);
+
+
 //			systick_Delay_ms(150);
 //
 //			//Brazos
@@ -242,6 +273,7 @@ void stickmanConstructor(uint16_t px, uint16_t py){
 	inicioAntebrazoIzquierdaY = inicioBrazoY+(largoBrazo*sin(anguloBrazoIzquierdo*(M_PI/180)));
 
 }
+
 void stickmanShape(uint16_t px, uint16_t py,float AnguloTorso, float AnguloCadera, float AnguloPiernaDerecha, float AnguloPiernaIzquierda,
 		float AnguloAntepiernaDerecha, float AnguloAntepiernaIzquierda, float AnguloBrazoDerecho, float AnguloBrazoIzquierdo,
 		float AnguloAntebrazoDerecha, float AnguloAntebrazoIzquierda, uint16_t color){
@@ -277,10 +309,8 @@ void stickmanShape(uint16_t px, uint16_t py,float AnguloTorso, float AnguloCader
 	drawLineA(inicioAntebrazoIzquierdaX,inicioAntebrazoIzquierdaY,largoAntebrazo,anguloAntebrazoIzquierda,color);
 	drawLineA(inicioAntebrazoDerechaX,inicioAntebrazoDerechaY,largoAntebrazo,anguloAntebrazoDerecha,color);
 }
-
 void cleanShape(uint16_t color){
 
-	drawRect(limitexizq,limiteyizq,2*limitexder,2*limiteyder,color);
 	//cabeza del stickman
 	drawCircle(centroCabezaX,centroCabezaY,radioCabeza,color);
 	//Cuerpo del stickman
@@ -300,9 +330,28 @@ void cleanShape(uint16_t color){
 	drawLineA(inicioAntebrazoDerechaX,inicioAntebrazoDerechaY,largoAntebrazo,anguloAntebrazoDerecha,color);
 
 }
+void cleanArmsT(uint16_t color){
+	//cabeza del stickman
+	drawCircle(centroCabezaX,centroCabezaY,radioCabeza,color);
+	//Cuerpo del stickman
+	drawLineA(centroCuerpoX,centroCuerpoY,torso,anguloTorso,color);
+	//Brazos
+	drawLineA(inicioBrazoX,inicioBrazoY,largoBrazo,anguloBrazoIzquierdo,color);
+	drawLineA(inicioBrazoX,inicioBrazoY,largoBrazo,anguloBrazoDerecho,color);
+	//Antebrazos
+	drawLineA(inicioAntebrazoIzquierdaX,inicioAntebrazoIzquierdaY,largoAntebrazo,anguloAntebrazoIzquierda,color);
+	drawLineA(inicioAntebrazoDerechaX,inicioAntebrazoDerechaY,largoAntebrazo,anguloAntebrazoDerecha,color);
+}
 
-void stickmanArms(uint16_t torso, float anguloTorso, float anguloBrazoDerecho, float anguloBrazoIzquierdo,
-		float anguloAntebrazoDerecha, float anguloAntebrazoIzquierda, uint16_t color){
+void stickmanArms(uint16_t px, uint16_t py, float AnguloBrazoDerecho, float AnguloBrazoIzquierdo,
+		float AnguloAntebrazoDerecha, float AnguloAntebrazoIzquierda, uint16_t color){
+
+	anguloBrazoDerecho = AnguloBrazoDerecho;
+	anguloBrazoIzquierdo = AnguloBrazoIzquierdo;
+	anguloAntebrazoDerecha = AnguloAntebrazoDerecha;
+	anguloAntebrazoIzquierda = AnguloAntebrazoIzquierda;
+
+	stickmanConstructor(px,py);
 
 	//Brazos
 	drawLineA(inicioBrazoX,inicioBrazoY,largoBrazo,anguloBrazoIzquierdo,color);
@@ -311,26 +360,39 @@ void stickmanArms(uint16_t torso, float anguloTorso, float anguloBrazoDerecho, f
 	drawLineA(inicioAntebrazoIzquierdaX,inicioAntebrazoIzquierdaY,largoAntebrazo,anguloAntebrazoIzquierda,color);
 	drawLineA(inicioAntebrazoDerechaX,inicioAntebrazoDerechaY,largoAntebrazo,anguloAntebrazoDerecha,color);
 }
-void stickmanLegs(uint16_t centroCuerpoX, uint16_t centroCuerpoY, float anguloPiernaDerecha, float anguloPiernaIzquierda,
-		float anguloAntepiernaDerecha, float anguloAntepiernaIzquierda, uint16_t color){
+void cleanArms(uint16_t color){
 
-	uint16_t radioCabeza = 25;
-	uint16_t centroCabeza = centroCuerpoY-(centroCuerpoY/2);
-	uint16_t largoCuerpo = radioCabeza*3;
+	//Brazos
+	drawLineA(inicioBrazoX,inicioBrazoY,largoBrazo,anguloBrazoIzquierdo,color);
+	drawLineA(inicioBrazoX,inicioBrazoY,largoBrazo,anguloBrazoDerecho,color);
+	//Antebrazos
+	drawLineA(inicioAntebrazoIzquierdaX,inicioAntebrazoIzquierdaY,largoAntebrazo,anguloAntebrazoIzquierda,color);
+	drawLineA(inicioAntebrazoDerechaX,inicioAntebrazoDerechaY,largoAntebrazo,anguloAntebrazoDerecha,color);
 
-	uint16_t inicioPierna = largoCuerpo+centroCabeza+radioCabeza;
-	uint16_t largoPierna = radioCabeza*2;
+}
 
-	uint16_t inicioAntepiernaDerechaX = centroCuerpoX+(largoPierna*cos(anguloPiernaDerecha*(M_PI/180)));
-	uint16_t inicioAntepiernaIzquierdaX = centroCuerpoX+(largoPierna*cos(anguloPiernaIzquierda*(M_PI/180)));
-	uint16_t inicioAntepiernaDerechaY = inicioPierna+(largoPierna*sin(anguloPiernaDerecha*(M_PI/180)));
-	uint16_t inicioAntepiernaIzquierdaY = inicioPierna+(largoPierna*sin(anguloPiernaIzquierda*(M_PI/180)));
-	uint16_t largoAntepierna = radioCabeza*2;
+void stickmanLegs(uint16_t px, uint16_t py, float AnguloPiernaDerecha, float AnguloPiernaIzquierda,
+		float AnguloAntepiernaDerecha, float AnguloAntepiernaIzquierda, uint16_t color){
 
-	//Antepiernas
-	drawLineA(centroCuerpoX,inicioPierna,largoPierna,anguloPiernaIzquierda,color);
-	drawLineA(centroCuerpoX,inicioPierna,largoPierna,anguloPiernaDerecha,color);
+	anguloPiernaDerecha = AnguloPiernaDerecha;
+	anguloPiernaIzquierda = AnguloPiernaIzquierda;
+	anguloAntepiernaDerecha = AnguloAntepiernaDerecha;
+	anguloAntepiernaIzquierda = AnguloAntepiernaIzquierda;
+
+	stickmanConstructor(px,py);
+
 	//Piernas
+	drawLineA(inicioPiernaX,inicioPiernaY,largoPierna,anguloPiernaIzquierda,color);
+	drawLineA(inicioPiernaX,inicioPiernaY,largoPierna,anguloPiernaDerecha,color);
+	//Antepiernas
+	drawLineA(inicioAntepiernaIzquierdaX,inicioAntepiernaIzquierdaY,largoAntepierna,anguloAntepiernaIzquierda,color);
+	drawLineA(inicioAntepiernaDerechaX,inicioAntepiernaDerechaY,largoAntepierna,anguloAntepiernaDerecha,color);
+}
+void cleanLegs(uint16_t color){
+	//Piernas
+	drawLineA(inicioPiernaX,inicioPiernaY,largoPierna,anguloPiernaIzquierda,color);
+	drawLineA(inicioPiernaX,inicioPiernaY,largoPierna,anguloPiernaDerecha,color);
+	//Antepiernas
 	drawLineA(inicioAntepiernaIzquierdaX,inicioAntepiernaIzquierdaY,largoAntepierna,anguloAntepiernaIzquierda,color);
 	drawLineA(inicioAntepiernaDerechaX,inicioAntepiernaDerechaY,largoAntepierna,anguloAntepiernaDerecha,color);
 }
