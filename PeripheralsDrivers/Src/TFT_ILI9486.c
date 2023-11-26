@@ -9,6 +9,8 @@
 #include "TFT_ILI9486.h"
 #include "gpio_driver_hal.h"
 #include "systick_driver_hal.h"
+#include "math.h"
+#include "stdbool.h"
 
 GPIO_Handler_t RS = { 0 };
 GPIO_Handler_t WR = { 0 };
@@ -62,12 +64,10 @@ static void tft_gpio_init(void);
 static void tft_gpio_db_config(void);
 static void wr_strobe(void);
 static void init(void);
-static void fillRect(uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t color);
 static void setAddrWindow(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1);
 static void swap(uint16_t *x, uint16_t *y);
-static void drawPixel(uint16_t x, uint16_t y, uint16_t color);
-static void pushColor(uint16_t color);
-static void pushColorl(uint16_t color, uint16_t len);
+//static void pushColor(uint16_t color);
+//static void pushColorl(uint16_t color, uint16_t len);
 
 void tft_Config(void) {
 
@@ -249,18 +249,7 @@ static void tft_gpio_init(void) {
 
 static void tft_gpio_db_config(void) {
 
-
-
 	//Organizo los pines como si fueran un registro de 8 bits de la variable DDRC
-//
-//	gpio_WritePin(&DB0_LOW, (DDRC & 1));
-//	gpio_WritePin(&DB1_LOW, ((DDRC >> 1) & 1));
-//	gpio_WritePin(&DB2_LOW, ((DDRC >> 2) & 1));
-//	gpio_WritePin(&DB3_LOW, ((DDRC >> 3) & 1));
-//	gpio_WritePin(&DB4_LOW, ((DDRC >> 4) & 1));
-//	gpio_WritePin(&DB5_LOW, ((DDRC >> 5) & 1));
-//	gpio_WritePin(&DB6_LOW, ((DDRC >> 6) & 1));
-//	gpio_WritePin(&DB7_LOW, ((DDRC >> 7) & 1));
 
 	gpio_WritePinFast(&DB0_LOW, (DDRC & 1));
 	gpio_WritePinFast(&DB1_LOW, ((DDRC >> 1) & 1));
@@ -270,37 +259,6 @@ static void tft_gpio_db_config(void) {
 	gpio_WritePinFast(&DB5_LOW, ((DDRC >> 5) & 1));
 	gpio_WritePinFast(&DB6_LOW, ((DDRC >> 6) & 1));
 	gpio_WritePinFast(&DB7_LOW, ((DDRC >> 7) & 1));
-
-//	//Organizo los pines como si fueran un registro de 8 bits de la variable DDRC
-//	uint8_t pospin = 0;
-//	pospin = (DDRC & 1);
-//	gpio_WritePinFast(&DB0_LOW, pospin);
-//	pospin =  ((DDRC >> 1) & 1);
-//	gpio_WritePinFast(&DB1_LOW, pospin);
-//	pospin = ((DDRC >> 2) & 1);
-//	gpio_WritePinFast(&DB2_LOW, pospin);
-//	pospin =  ((DDRC >> 3) & 1);
-//	gpio_WritePinFast(&DB3_LOW,pospin);
-//	pospin = ((DDRC >> 4) & 1);
-//	gpio_WritePinFast(&DB4_LOW,pospin );
-//	pospin = ((DDRC >> 5) & 1);
-//	gpio_WritePinFast(&DB5_LOW, pospin);
-//	pospin = ((DDRC >> 6) & 1);
-//	gpio_WritePinFast(&DB6_LOW, pospin);
-//	pospin = ((DDRC >> 7) & 1);
-//	gpio_WritePinFast(&DB7_LOW, pospin);
-
-
-
-//	//Organizo los pines como si fueran un registro de 8 bits de la variable DDRA
-//	gpio_WritePin(&DB8_HIGH, (DDRA & 1));
-//	gpio_WritePin(&DB9_HIGH, ((DDRA >> 1) & 1));
-//	gpio_WritePin(&DB10_HIGH, ((DDRA >> 2) & 1));
-//	gpio_WritePin(&DB11_HIGH, ((DDRA >> 3) & 1));
-//	gpio_WritePin(&DB12_HIGH, ((DDRA >> 4) & 1));
-//	gpio_WritePin(&DB13_HIGH, ((DDRA >> 5) & 1));
-//	gpio_WritePin(&DB14_HIGH, ((DDRA >> 6) & 1));
-//	gpio_WritePin(&DB15_HIGH, ((DDRA >> 7) & 1));
 
 	//Organizo los pines como si fueran un registro de 8 bits de la variable DDRA
 	gpio_WritePinFast(&DB8_HIGH, (DDRA & 1));
@@ -363,38 +321,39 @@ void init() {
 	tft_write_command(0x28);
 	tft_write_data(0x00);
 
-//	tft_write_command(0xC0);        // Power Control 1
-//	tft_write_data(0x0d);
-//	tft_write_data(0x0d);
-//
-//	tft_write_command(0xC1);        // Power Control 2
-//	tft_write_data(0x43);
-//	tft_write_data(0x00);
-//
-//	tft_write_command(0xC2);        // Power Control 3
-//	tft_write_data(0x00);
-//
-//	tft_write_command(0xC5);        // VCOM Control
-//	tft_write_data(0x00);
-//	tft_write_data(0x48);
-	tft_write_command(0xC0); //                          1100.0000 Power Control 1
-	tft_write_data(0x0E);    //                          0001.0111   ... VRH1
-    tft_write_data(0x0E);    //                          0001.0101   ... VRH2
-    tft_write_command(0xC1); //                          1100.0001 Power Control 2
-    tft_write_data(0x41);    //                          0100.0001   . SAP BT
-    tft_write_data(0x00);    //                          0000.0000   ..... VC
-    tft_write_command(0xC2); //                          1100.0010 Power Control 3
-    tft_write_data(0x00);    //     nb. was 0x44         0101.0101   . DCA1 . DCA0
+	tft_write_command(0xC0);        // Power Control 1
+	tft_write_data(0x0d);
+	tft_write_data(0x0d);
 
-    tft_write_command(0xC5); //VCOM
-    tft_write_data(0x00);
-    tft_write_data(0x00);
-    tft_write_data(0x00);
-    tft_write_data(0x00);
+	tft_write_command(0xC1);        // Power Control 2
+	tft_write_data(0x43);
+	tft_write_data(0x00);
 
+	tft_write_command(0xC2);        // Power Control 3
+	tft_write_data(0x00);
 
-	tft_write_command(0xB3);
-	tft_write_data(0x1F);
+	tft_write_command(0xC5);        // VCOM Control
+	tft_write_data(0x00);
+	tft_write_data(0x48);
+
+//	tft_write_command(0xC0); //                          1100.0000 Power Control 1
+//	tft_write_data(0x0E);    //                          0001.0111   ... VRH1
+//    tft_write_data(0x0E);    //                          0001.0101   ... VRH2
+//    tft_write_command(0xC1); //                          1100.0001 Power Control 2
+//    tft_write_data(0x41);    //                          0100.0001   . SAP BT
+//    tft_write_data(0x00);    //                          0000.0000   ..... VC
+//    tft_write_command(0xC2); //                          1100.0010 Power Control 3
+//    tft_write_data(0x00);    //     nb. was 0x44         0101.0101   . DCA1 . DCA0
+//
+//    tft_write_command(0xC5); //VCOM
+//    tft_write_data(0x00);
+//    tft_write_data(0x00);
+//    tft_write_data(0x00);
+//    tft_write_data(0x00);
+
+//
+//	tft_write_command(0xB3);
+//	tft_write_data(0x1F);
 
 
 	tft_write_command(0xB6);        // Display Function Control
@@ -494,7 +453,7 @@ void fillScreen(uint16_t color){
 	fillRect(0,0,width,height,color);
 }
 
-static void fillRect(uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t color){
+void fillRect(uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t color){
 
 	  // rudimentary clipping (drawChar w/big text requires this)
 	  if ((x >= width) || (y >= height) || (w==0) || (h==0)) return;
@@ -542,13 +501,16 @@ static void setAddrWindow(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1){
 	//RS off
 	GPIOB->ODR &= ~(SET<<5);
 
+	/*
+	 * Configura el controlador para escribir en la posición horizontal
+	 */
 	DDRC = ILI9486_SET_COLUMN_ADDRESS; tft_gpio_db_config(); wr_strobe();
-	//RS off
+	//RS on
 	GPIOB->ODR |= (SET<<5);
 	DDRC = x0>>8;	tft_gpio_db_config();	wr_strobe();
-	DDRC = x0;tft_gpio_db_config(); wr_strobe();
-	DDRC = x1>>8;tft_gpio_db_config(); wr_strobe();
-	DDRC = x1;tft_gpio_db_config(); wr_strobe();
+	DDRC = x0;		tft_gpio_db_config(); wr_strobe();
+	DDRC = x1>>8;	tft_gpio_db_config(); wr_strobe();
+	DDRC = x1;		tft_gpio_db_config(); wr_strobe();
 	//RS off
 	GPIOB->ODR &= ~(SET<<5); DDRC = ILI9486_SET_PAGE_ADDRESS; tft_gpio_db_config(); wr_strobe();
 	//RS on
@@ -564,7 +526,7 @@ static void setAddrWindow(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1){
 	GPIOB->ODR |= (SET<<5);
 }
 
-static void drawPixel(uint16_t x, uint16_t y, uint16_t color){
+void drawPixel(uint16_t x, uint16_t y, uint16_t color){
 	// Faster range checking, possible because x and y are unsigned
 	//  if ((x >= _width) || (y >= _height)) return;
 	//CS off
@@ -572,44 +534,357 @@ static void drawPixel(uint16_t x, uint16_t y, uint16_t color){
 	//RS off
 	GPIOB->ODR &= ~(SET<<5);
 
-	DDRC = ILI9486_SET_COLUMN_ADDRESS; wr_strobe();
+	/*
+	 * Configura el controlador para escribir en la posición horizontal
+	 */
+	DDRC = ILI9486_SET_COLUMN_ADDRESS; tft_gpio_db_config(); wr_strobe();
 	//RS on
 	GPIOB->ODR |= (SET<<5);
-	DDRC = x>>8; wr_strobe();
-	DDRC = x; wr_strobe();
-	DDRC = x>>8; wr_strobe();
-	DDRC = x; wr_strobe();
+
+	//Configura las coordenadas horizontales (x) para el píxel.
+	DDRC = x>>8; tft_gpio_db_config(); wr_strobe();
+	DDRC = x; tft_gpio_db_config(); wr_strobe();
+	DDRC = x>>8; tft_gpio_db_config(); wr_strobe();
+	DDRC = x; tft_gpio_db_config(); wr_strobe();
 	GPIOB->ODR &= ~(SET<<5);
-	DDRC = ILI9486_SET_PAGE_ADDRESS; wr_strobe();
+
+	//Configura las coordenadas horizontales (x) para el píxel.
+	DDRC = ILI9486_SET_PAGE_ADDRESS; tft_gpio_db_config(); wr_strobe();
 	//RS on
 	GPIOB->ODR |= (SET<<5);
-	DDRC = y>>8; wr_strobe();
-	DDRC = y; wr_strobe();
-	DDRC = y>>8; wr_strobe();
-	DDRC = y; wr_strobe();
+
+
+	// Configura las coordenadas horizontales (y) para el píxel.
+	DDRC = y>>8; tft_gpio_db_config(); wr_strobe();
+	DDRC = y; tft_gpio_db_config(); wr_strobe();
+	DDRC = y>>8; tft_gpio_db_config(); wr_strobe();
+	DDRC = y; tft_gpio_db_config(); wr_strobe();
 	GPIOB->ODR &= ~(SET<<5);
-	DDRC = ILI9486_MEMORY_WRITE; wr_strobe();
+
+
+	// Configura el controlador para escribir en la memoria de píxeles
+	DDRC = ILI9486_MEMORY_WRITE; tft_gpio_db_config();  wr_strobe();
 	//RS on
 	GPIOB->ODR |= (SET<<5);
 	DDRC = color;
-	DDRA = color>>8; wr_strobe();
+	DDRA = color>>8; tft_gpio_db_config();wr_strobe();
+	GPIOC->ODR |= (SET<<4);
+
+}
+//
+//static void pushColor(uint16_t color){
+//
+//	GPIOC->ODR &= ~(SET<<4);
+//	DDRA    = color >> 8;
+//	DDRC    = color;
+//	wr_strobe();
+//	GPIOC->ODR |= (SET<<4);
+//}
+//
+//static void pushColorl(uint16_t color, uint16_t len){
+//	GPIOC->ODR &= ~(SET<<4);
+//	DDRA    = color;
+//	DDRC    = color >> 8;
+//	while(len) { len--;wr_strobe();}
+//	GPIOC->ODR |= (SET<<4);
+//}
+
+void drawFastVLine(uint16_t x, uint16_t y, uint16_t h, uint16_t color){
+		//CS off
+		GPIOC->ODR &= ~(SET<<4);
+		//RS off
+		GPIOB->ODR &= ~(SET<<5);
+		DDRC = ILI9486_SET_COLUMN_ADDRESS; tft_gpio_db_config(); wr_strobe();
+		//RS on
+		GPIOB->ODR |= (SET<<5);
+		DDRC = x>>8;tft_gpio_db_config(); wr_strobe();
+		DDRC = x; tft_gpio_db_config();wr_strobe();
+		DDRC = x>>8; tft_gpio_db_config();wr_strobe();
+		DDRC = x; tft_gpio_db_config();wr_strobe();
+		//RS off
+		GPIOB->ODR &= ~(SET<<5);
+
+		DDRC = ILI9486_SET_PAGE_ADDRESS; tft_gpio_db_config(); wr_strobe();
+		//RS on
+		GPIOB->ODR |= (SET<<5);
+		DDRC = y>>8; tft_gpio_db_config();wr_strobe();
+		DDRC = y; tft_gpio_db_config();wr_strobe();
+		y+=h-1;
+		DDRC = y>>8; tft_gpio_db_config();wr_strobe();
+		DDRC = y; tft_gpio_db_config();wr_strobe();
+		//RS off
+		GPIOB->ODR &= ~(SET<<5);
+		DDRC = ILI9486_MEMORY_WRITE; tft_gpio_db_config(); wr_strobe();
+		//RS on
+		GPIOB->ODR |= (SET<<5);
+		DDRC = color;
+		DDRA = color>>8;tft_gpio_db_config(); wr_strobe();
+		while (h>15) { h-=16;
+			wr_strobe();wr_strobe();wr_strobe();wr_strobe();
+			wr_strobe();wr_strobe();wr_strobe();wr_strobe();
+			wr_strobe();wr_strobe();wr_strobe();wr_strobe();
+			wr_strobe();wr_strobe();wr_strobe();wr_strobe();
+		}
+		while (h--) { wr_strobe();}
+		GPIOC->ODR |= (SET<<4);
+}
+
+void drawFastHLine(uint16_t x, uint16_t y, uint16_t w, uint16_t color)
+{
+		//CS off
+		GPIOC->ODR &= ~(SET<<4);
+		//RS off
+		GPIOB->ODR &= ~(SET<<5);
+		DDRC = ILI9486_SET_COLUMN_ADDRESS; tft_gpio_db_config(); wr_strobe();
+		//RS on
+		GPIOB->ODR |= (SET<<5);
+		DDRC = x>>8; tft_gpio_db_config();wr_strobe();
+		DDRC = x; tft_gpio_db_config();wr_strobe();
+		x+=w-1;
+		DDRC = x>>8; tft_gpio_db_config();wr_strobe();
+		DDRC = x; tft_gpio_db_config();wr_strobe();
+		//RS off
+		GPIOB->ODR &= ~(SET<<5);
+		DDRC = ILI9486_SET_PAGE_ADDRESS; tft_gpio_db_config(); wr_strobe();
+		//RS on
+		GPIOB->ODR |= (SET<<5);
+		DDRC = y>>8;tft_gpio_db_config(); wr_strobe();
+		DDRC = y;tft_gpio_db_config(); wr_strobe();
+		DDRC = y>>8; tft_gpio_db_config();wr_strobe();
+		DDRC = y;tft_gpio_db_config(); wr_strobe();
+		//RS off
+		GPIOB->ODR &= ~(SET<<5);
+		DDRC = ILI9486_MEMORY_WRITE; tft_gpio_db_config(); wr_strobe();
+		//RS on
+		GPIOB->ODR |= (SET<<5);
+		DDRC = color;
+		DDRA = color>>8;tft_gpio_db_config(); wr_strobe();
+
+		while (w>15) { w-=16;
+			wr_strobe();wr_strobe();wr_strobe();wr_strobe();
+			wr_strobe();wr_strobe();wr_strobe();wr_strobe();
+			wr_strobe();wr_strobe();wr_strobe();wr_strobe();
+			wr_strobe();wr_strobe();wr_strobe();wr_strobe();
+		}
+		while (w--) { wr_strobe();}
+		GPIOC->ODR |= (SET<<4);
+}
+
+void drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, uint16_t color)
+
+{
+	_Bool steep = fabsl(y1 - y0) > fabsl(x1 - x0);
+  if (steep) {
+    swap(&x0, &y0);
+    swap(&x1, &y1);
+  }
+
+  if (x0 > x1) {
+    swap(&x0, &x1);
+    swap(&y0, &y1);
+  }
+
+  int16_t dx = x1 - x0, dy = fabsl(y1 - y0);;
+
+  int16_t err = dx>>1, ystep=-1, xs=x0, dlen=0;
+  if (y0 < y1) ystep = 1;
+
+	//CS off
+	GPIOC->ODR &= ~(SET<<4);
+  // Split into steep and not steep for FastH/V separation
+  if(steep) {
+    for (; x0<=x1; x0++) {
+      dlen++;
+      err -= dy;
+      if (err < 0) {
+        err += dx;
+
+		//RS off
+		GPIOB->ODR &= ~(SET<<5);
+		DDRC = ILI9486_SET_COLUMN_ADDRESS; tft_gpio_db_config(); wr_strobe();
+		//RS on
+		GPIOB->ODR |= (SET<<5);
+		DDRC = y0>>8; tft_gpio_db_config(); wr_strobe();
+		DDRC = y0; tft_gpio_db_config(); wr_strobe();
+		DDRC = y0>>8; tft_gpio_db_config(); wr_strobe();
+		DDRC = y0; tft_gpio_db_config(); wr_strobe();
+		//RS off
+		GPIOB->ODR &= ~(SET<<5);
+		DDRC = ILI9486_SET_PAGE_ADDRESS; tft_gpio_db_config(); wr_strobe();
+		//RS on
+		GPIOB->ODR |= (SET<<5);
+		DDRC = xs>>8;tft_gpio_db_config(); wr_strobe();
+		DDRC = xs; tft_gpio_db_config(); wr_strobe();
+		DDRC = x1>>8; tft_gpio_db_config(); wr_strobe();
+		DDRC = x1; tft_gpio_db_config(); wr_strobe();
+		//RS off
+		GPIOB->ODR &= ~(SET<<5);
+		DDRC = ILI9486_MEMORY_WRITE; tft_gpio_db_config(); wr_strobe();
+		//RS on
+		GPIOB->ODR |= (SET<<5);
+		DDRC = color;
+		DDRA = color>>8;tft_gpio_db_config(); wr_strobe();
+
+        while (dlen) { dlen--;wr_strobe();}
+
+        y0 += ystep; xs=x0+1;
+      }
+    }
+    if(dlen) drawFastVLine(y0, xs, dlen, color);
+  }
+  else
+  {
+    for (; x0<=x1; x0++) {
+      dlen++;
+      err -= dy;
+      if (err < 0) {
+        err += dx;
+
+		//RS off
+		GPIOB->ODR &= ~(SET<<5);
+		DDRC = ILI9486_SET_COLUMN_ADDRESS; tft_gpio_db_config(); wr_strobe();
+		//RS on
+		GPIOB->ODR |= (SET<<5);
+		DDRC = xs>>8; tft_gpio_db_config(); wr_strobe();
+		DDRC = xs; tft_gpio_db_config(); wr_strobe();
+		DDRC = x1>>8; tft_gpio_db_config(); wr_strobe();
+		DDRC = x1; tft_gpio_db_config(); wr_strobe();
+		//RS off
+		GPIOB->ODR &= ~(SET<<5);
+		DDRC = ILI9486_SET_PAGE_ADDRESS; tft_gpio_db_config(); wr_strobe();
+		//RS on
+		GPIOB->ODR |= (SET<<5);
+		DDRC = y0>>8; tft_gpio_db_config(); wr_strobe();
+		DDRC = y0; tft_gpio_db_config(); wr_strobe();
+		DDRC = y0>>8; tft_gpio_db_config(); wr_strobe();
+		DDRC = y0; tft_gpio_db_config(); wr_strobe();
+		//RS off
+		GPIOB->ODR &= ~(SET<<5);
+		DDRC = ILI9486_MEMORY_WRITE; tft_gpio_db_config(); wr_strobe();
+		//RS on
+		GPIOB->ODR |= (SET<<5);
+		DDRC = color;
+		DDRA = color>>8;tft_gpio_db_config(); wr_strobe();
+
+        while(dlen){ dlen--;wr_strobe();}
+
+        y0 += ystep; xs=x0+1;
+      }
+    }
+    if(dlen) drawFastHLine(xs, y0, dlen, color);
+  }
+  //CS high
 	GPIOC->ODR |= (SET<<4);
 }
 
-static void pushColor(uint16_t color){
+void drawLineA(uint16_t x0, uint16_t y0, uint16_t r, float angulo, uint16_t color)
+{
+	uint16_t x1 = 0;
+	uint16_t y1 = 0;
+	x1 = (r*cosf(angulo*(M_PI/180))+x0);
+	y1 = (r*sinf(angulo*(M_PI/180))+y0);
 
-	GPIOC->ODR &= ~(SET<<4);
-	DDRA    = color >> 8;
-	DDRC    = color;
-	wr_strobe();
-	GPIOC->ODR |= (SET<<4);
-}
+	_Bool steep = fabsl(y1 - y0) > fabsl(x1 - x0);
+  if (steep) {
+    swap(&x0, &y0);
+    swap(&x1, &y1);
+  }
 
-static void pushColorl(uint16_t color, uint16_t len){
+  if (x0 > x1) {
+    swap(&x0, &x1);
+    swap(&y0, &y1);
+  }
+
+  int16_t dx = x1 - x0, dy = fabsl(y1 - y0);;
+
+  int16_t err = dx>>1, ystep=-1, xs=x0, dlen=0;
+  if (y0 < y1) ystep = 1;
+
+	//CS off
 	GPIOC->ODR &= ~(SET<<4);
-	DDRA    = color;
-	DDRC    = color >> 8;
-	while(len) { len--;wr_strobe();}
+  // Split into steep and not steep for FastH/V separation
+  if(steep) {
+    for (; x0<=x1; x0++) {
+      dlen++;
+      err -= dy;
+      if (err < 0) {
+        err += dx;
+
+		//RS off
+		GPIOB->ODR &= ~(SET<<5);
+		DDRC = ILI9486_SET_COLUMN_ADDRESS; tft_gpio_db_config(); wr_strobe();
+		//RS on
+		GPIOB->ODR |= (SET<<5);
+		DDRC = y0>>8; tft_gpio_db_config(); wr_strobe();
+		DDRC = y0; tft_gpio_db_config(); wr_strobe();
+		DDRC = y0>>8; tft_gpio_db_config(); wr_strobe();
+		DDRC = y0; tft_gpio_db_config(); wr_strobe();
+		//RS off
+		GPIOB->ODR &= ~(SET<<5);
+		DDRC = ILI9486_SET_PAGE_ADDRESS; tft_gpio_db_config(); wr_strobe();
+		//RS on
+		GPIOB->ODR |= (SET<<5);
+		DDRC = xs>>8;tft_gpio_db_config(); wr_strobe();
+		DDRC = xs; tft_gpio_db_config(); wr_strobe();
+		DDRC = x1>>8; tft_gpio_db_config(); wr_strobe();
+		DDRC = x1; tft_gpio_db_config(); wr_strobe();
+		//RS off
+		GPIOB->ODR &= ~(SET<<5);
+		DDRC = ILI9486_MEMORY_WRITE; tft_gpio_db_config(); wr_strobe();
+		//RS on
+		GPIOB->ODR |= (SET<<5);
+		DDRC = color;
+		DDRA = color>>8;tft_gpio_db_config(); wr_strobe();
+
+        while (dlen) { dlen--;wr_strobe();}
+
+        y0 += ystep; xs=x0+1;
+      }
+    }
+    if(dlen) drawFastVLine(y0, xs, dlen, color);
+  }
+  else
+  {
+    for (; x0<=x1; x0++) {
+      dlen++;
+      err -= dy;
+      if (err < 0) {
+        err += dx;
+
+		//RS off
+		GPIOB->ODR &= ~(SET<<5);
+		DDRC = ILI9486_SET_COLUMN_ADDRESS; tft_gpio_db_config(); wr_strobe();
+		//RS on
+		GPIOB->ODR |= (SET<<5);
+		DDRC = xs>>8; tft_gpio_db_config(); wr_strobe();
+		DDRC = xs; tft_gpio_db_config(); wr_strobe();
+		DDRC = x1>>8; tft_gpio_db_config(); wr_strobe();
+		DDRC = x1; tft_gpio_db_config(); wr_strobe();
+		//RS off
+		GPIOB->ODR &= ~(SET<<5);
+		DDRC = ILI9486_SET_PAGE_ADDRESS; tft_gpio_db_config(); wr_strobe();
+		//RS on
+		GPIOB->ODR |= (SET<<5);
+		DDRC = y0>>8; tft_gpio_db_config(); wr_strobe();
+		DDRC = y0; tft_gpio_db_config(); wr_strobe();
+		DDRC = y0>>8; tft_gpio_db_config(); wr_strobe();
+		DDRC = y0; tft_gpio_db_config(); wr_strobe();
+		//RS off
+		GPIOB->ODR &= ~(SET<<5);
+		DDRC = ILI9486_MEMORY_WRITE; tft_gpio_db_config(); wr_strobe();
+		//RS on
+		GPIOB->ODR |= (SET<<5);
+		DDRC = color;
+		DDRA = color>>8;tft_gpio_db_config(); wr_strobe();
+
+        while(dlen){ dlen--;wr_strobe();}
+
+        y0 += ystep; xs=x0+1;
+      }
+    }
+    if(dlen) drawFastHLine(xs, y0, dlen, color);
+  }
+  //CS high
 	GPIOC->ODR |= (SET<<4);
 }
 
@@ -617,45 +892,69 @@ uint16_t color565(uint8_t r, uint8_t g, uint8_t b){
 	return ((r & 0xF8) << 8) | ((g & 0xFC) << 3) | (b >> 3);
 }
 
-void drawCircle(int16_t x0, int16_t y0, int16_t r, uint16_t color){
+void drawCircle(uint16_t x0, uint16_t y0, uint16_t r, uint16_t color){
 
-  uint16_t f = 0;
-  uint16_t f1 = 0;
-  f = 1 - r;
-  f1 = 1 - r;
-  uint16_t ddF_x = 0;
-  ddF_x = 1;
-  uint16_t ddF_y = 0;
-  ddF_y = - r - r;
-  uint16_t x = 0;
+	uint16_t fx = 0;
+	uint16_t fy = 0;
+	uint16_t fx1 = 0;
+	uint16_t fy1 = 0;
+	uint16_t fx2 = 0;
+	uint16_t fy2 = 0;
+	uint16_t fx3 = 0;
+	uint16_t fy3 = 0;
 
-  drawPixel(x0  , y0 + r, color);
-  drawPixel(x0  , y0 - r, color);
-  drawPixel(x0 + r, y0, color);
-  drawPixel(x0 - r, y0, color);
+	for(uint16_t t = 0; t<50;t++){
+		fx = (r*cosf(t*(M_PI/100))+x0);
+		fy = (r*sinf(t*(M_PI/100))+y0);
+		fx1 = (r*cosf(t*(M_PI/100))+x0);
+		fy1 = (r*sinf(-t*(M_PI/100))+y0);
+		fx2 = (-r*cosf(t*(M_PI/100))+x0);
+		fy2 = (r*sinf(t*(M_PI/100))+y0);
+		fx3 = (-r*cosf(t*(M_PI/100))+x0);
+		fy3 = (r*sinf(-t*(M_PI/100))+y0);
 
-  while (x < r) {
-    if (f >= 0) {
-      r--;
-      ddF_y += 2;
-      f1 += ddF_y;
-    }
-    x++;
-    ddF_x += 2;
-    f += ddF_x;
-
-    drawPixel(x0 + x, y0 + r, color);
-    drawPixel(x0 - x, y0 + r, color);
-    drawPixel(x0 + x, y0 - r, color);
-    drawPixel(x0 - x, y0 - r, color);
-    drawPixel(x0 + r, y0 + x, color);
-    drawPixel(x0 - r, y0 + x, color);
-    drawPixel(x0 + r, y0 - x, color);
-    drawPixel(x0 - r, y0 - x, color);
-  }
+		drawPixel(fx, fy, color);
+		drawPixel(fx1, fy1, color);
+		drawPixel(fx2, fy2, color);
+		drawPixel(fx3, fy3, color);
+	}
 }
 
+void fillCircle(uint16_t x0, uint16_t y0, uint16_t r, uint16_t color)
+{
+	//Luego terminar
+//	uint16_t fx = 0;
+//	uint16_t fy = 0;
+//	uint16_t fx1 = 0;
+//	uint16_t fy1 = 0;
+//	uint16_t fx2 = 0;
+//	uint16_t fy2 = 0;
+//	uint16_t fx3 = 0;
+//	uint16_t fy3 = 0;
+//
+//	for(uint16_t t = 0; t<50;t++){
+//		fx = (r*cosf(t*(M_PI/100))+x0);
+//		fy = (r*sinf(t*(M_PI/100))+y0);
+//		fx2 = (-r*cosf(t*(M_PI/100))+x0);
+//		fy2 = (r*sinf(t*(M_PI/100))+y0);
+//		drawPixel(fx, fy, color);
+//		drawPixel(fx2, fy2, color);
+//
+//		fx1 = (r*cosf(t*(M_PI/100))+x0);
+//		fy1 = (r*sinf(-t*(M_PI/100))+y0);
+//		fx3 = (-r*cosf(t*(M_PI/100))+x0);
+//		fy3 = (r*sinf(-t*(M_PI/100))+y0);
+//		drawPixel(fx1, fy1, color);
+//		drawPixel(fx3, fy3, color);
+//
+//	}
+}
 
-
-
+void drawRect(uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t color)
+{
+  drawFastHLine(x, y, w, color);
+  drawFastHLine(x, (y + h - 1), w, color);
+  drawFastVLine(x, y, h, color);
+  drawFastVLine((x + w - 1), y, h, color);
+}
 
