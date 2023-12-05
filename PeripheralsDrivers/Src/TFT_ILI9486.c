@@ -314,6 +314,93 @@ void init() {
 	gpio_WritePin(&RST, SET);
 	systick_Delay_ms(10);
 
+/*
+ * Prueba init 2.0
+ */
+//	tft_write_command(0X01);
+//	tft_write_data(0x00);
+//	systick_Delay_ms(50);
+//	tft_write_command(0XF1);
+//	tft_write_data(0x36);
+//	tft_write_data(0x04);
+//	tft_write_data(0x00);
+//	tft_write_data(0x3C);
+//	tft_write_data(0X0F);
+//	tft_write_data(0x8F);
+//	tft_write_command(0XF2);
+//	tft_write_data(0x18);
+//	tft_write_data(0xA3);
+//	tft_write_data(0x12);
+//	tft_write_data(0x02);
+//	tft_write_data(0XB2);
+//	tft_write_data(0x12);
+//	tft_write_data(0xFF);
+//	tft_write_data(0x10);
+//	tft_write_data(0x00);
+//	tft_write_command(0XF8);
+//	tft_write_data(0x21);
+//	tft_write_data(0x04);
+//	tft_write_command(0XF9);
+//	tft_write_data(0x00);
+//	tft_write_data(0x08);
+//	tft_write_command(0x36);
+//	tft_write_data(0x08);
+//	tft_write_command(0xB4);
+//	tft_write_data(0x00);
+//	tft_write_command(0xC1);
+//	tft_write_data(0x41);
+//	tft_write_command(0xC5);
+//	tft_write_data(0x00);
+//	tft_write_data(0x91);
+//	tft_write_data(0x80);
+//	tft_write_data(0x00);
+//	tft_write_command(0xE0);
+//	tft_write_data(0x0F);
+//	tft_write_data(0x1F);
+//	tft_write_data(0x1C);
+//	tft_write_data(0x0C);
+//	tft_write_data(0x0F);
+//	tft_write_data(0x08);
+//	tft_write_data(0x48);
+//	tft_write_data(0x98);
+//	tft_write_data(0x37);
+//	tft_write_data(0x0A);
+//	tft_write_data(0x13);
+//	tft_write_data(0x04);
+//	tft_write_data(0x11);
+//	tft_write_data(0x0D);
+//	tft_write_data(0x00);
+//	tft_write_command(0xE1);
+//	tft_write_data(0x0F);
+//	tft_write_data(0x32);
+//	tft_write_data(0x2E);
+//	tft_write_data(0x0B);
+//	tft_write_data(0x0D);
+//	tft_write_data(0x05);
+//	tft_write_data(0x47);
+//	tft_write_data(0x75);
+//	tft_write_data(0x37);
+//	tft_write_data(0x06);
+//	tft_write_data(0x10);
+//	tft_write_data(0x03);
+//	tft_write_data(0x24);
+//	tft_write_data(0x20);
+//	tft_write_data(0x00);
+//	tft_write_command(0x3A);
+//	tft_write_data(0x55);
+//	tft_write_command(0x11);
+//	systick_Delay_ms(150);
+//	tft_write_command(0x20);
+//	tft_write_command(0x36);
+//	tft_write_data(0x28);
+//	systick_Delay_ms(120);
+//	tft_write_command(0x29);
+//	systick_Delay_ms(25);
+
+	/*
+	 * Prueba init 2.0
+	 */
+
 	tft_write_command(0x01);
 	tft_write_data(0x00);
 	systick_Delay_ms(50);
@@ -903,15 +990,15 @@ void drawCircle(uint16_t x0, uint16_t y0, uint16_t r, uint16_t color){
 	uint16_t fx3 = 0;
 	uint16_t fy3 = 0;
 
-	for(uint16_t t = 0; t<50;t++){
-		fx = (r*cosf(t*(M_PI/100))+x0);
-		fy = (r*sinf(t*(M_PI/100))+y0);
-		fx1 = (r*cosf(t*(M_PI/100))+x0);
-		fy1 = (r*sinf(-t*(M_PI/100))+y0);
-		fx2 = (-r*cosf(t*(M_PI/100))+x0);
-		fy2 = (r*sinf(t*(M_PI/100))+y0);
-		fx3 = (-r*cosf(t*(M_PI/100))+x0);
-		fy3 = (r*sinf(-t*(M_PI/100))+y0);
+	for(uint16_t t = 0; t<25;t++){
+		fx = (r*cosf(t*(M_PI/50))+x0);
+		fy = (r*sinf(t*(M_PI/50))+y0);
+		fx1 = (r*cosf(t*(M_PI/50))+x0);
+		fy1 = (r*sinf(-t*(M_PI/50))+y0);
+		fx2 = (-r*cosf(t*(M_PI/50))+x0);
+		fy2 = (r*sinf(t*(M_PI/50))+y0);
+		fx3 = (-r*cosf(t*(M_PI/50))+x0);
+		fy3 = (r*sinf(-t*(M_PI/50))+y0);
 
 		drawPixel(fx, fy, color);
 		drawPixel(fx1, fy1, color);
