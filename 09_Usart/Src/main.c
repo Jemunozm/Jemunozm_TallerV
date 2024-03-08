@@ -7,6 +7,7 @@
  */
 
 #include <stdint.h>
+#include <stm32f4xx.h>
 #include "usart_driver_hal.h"
 #include "gpio_driver_hal.h"
 #include "timer_driver_hal.h"

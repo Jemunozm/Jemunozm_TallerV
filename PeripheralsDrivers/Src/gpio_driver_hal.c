@@ -61,6 +61,7 @@ void gpio_enable_clock_peripheral(GPIO_Handler_t *pGPIOHandler){
 	assert_param(IS_GPIO_ALL_INSTANCE(pGPIOHandler->pGPIOx));
 
 	// Verificamos para GPIOA
+
 		if(pGPIOHandler->pGPIOx == GPIOA){
 			// Escribimos 1 (SET) en la posición correspondiente al GPIOA
 			RCC->AHB1ENR |= (RCC_AHB1ENR_GPIOAEN);
@@ -259,23 +260,13 @@ uint8_t gpio_ReadPin(GPIO_Handler_t *pPinHandler){
 }
 
 void gpio_TooglePin(GPIO_Handler_t *pPinHandler){
+
 	//creamos una variable auxiliar (mascara) donde guardaremos el valor del pin.
 	uint8_t pinValue = 0;
 	//Cambiamos el estado del pin usando XOR con un 1 en la mascara PinValue
 	pinValue = gpio_ReadPin(pPinHandler) ^ 1;
 	// Escribimos el nuevo estado del pin.
 	gpio_WritePin(pPinHandler, pinValue);
-
-//	pinValue = (pPinHandler->pGPIOx->IDR >> pPinHandler->pinConfig.GPIO_PinNumber) & 1;
-//	//Cargamos el nuevo estado del pin usando nuestra variabel auxiliar
-//	pPinHandler->pGPIOx->ODR ^= (pinValue << pPinHandler->pinConfig.GPIO_PinNumber);
-
-//	if (pinValue == 0){
-//		pPinHandler->pGPIOx->BSRR |= (SET << (pPinHandler->pinConfig.GPIO_PinNumber));
-//	}
-//	else {
-//		pPinHandler->pGPIOx->BSRR |= (SET << (pPinHandler->pinConfig.GPIO_PinNumber + 16));
-//	}
 
 }
 

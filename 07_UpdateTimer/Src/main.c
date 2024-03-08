@@ -30,7 +30,7 @@ int main (void){
 	userLed.pinConfig.GPIO_PinOutputSpeed	= GPIO_OSPEED_MEDIUM;
 	userLed.pinConfig.GPIO_PinPuPdControl	= GPIO_PUPDR_NOTHING;
 
-	btn13.pGPIOx							= GPIOB;
+	btn13.pGPIOx							= GPIOC;
 	btn13.pinConfig.GPIO_PinNumber			= PIN_13;
 	btn13.pinConfig.GPIO_PinMode			= GPIO_MODE_IN;
 

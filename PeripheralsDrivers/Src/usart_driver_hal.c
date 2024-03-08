@@ -189,6 +189,7 @@ static void usart_config_baudrate(USART_Handler_t *ptrUsartHandler) {
 		// Valor a cargar 0x0683
 		// Configurando el Baudrate generator para una velocidad de 9600bps
 		ptrUsartHandler->ptrUSARTx->BRR = 0x0683;
+		break;
 	}
 	case USART_BAUDRATE_19200: {
 		// El valor a cargar es 52.0625 -> Mantiza = 52,fraction = 0.0625

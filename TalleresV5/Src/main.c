@@ -21,8 +21,8 @@
 #include "stm32f4xx.h"
 #include "gpio_driver_hal.h"
 #include "timer_driver_hal.h"
-#include "USARTxDriver.h"
-#include "AdcDriver.h"
+#include "usart_driver_hal.h"
+#include "adc_driver_hal.h"
 
 #define		OFF		0
 #define		ON		1
