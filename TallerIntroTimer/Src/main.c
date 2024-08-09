@@ -59,7 +59,7 @@ void resta(uint8_t *conteo);
 
 
 int main(void) {
-	periodo = 301;
+	periodo = 1005;
 	// llamamosala funcion que cuenta con toda la configuración
 	initSys();
 
@@ -67,19 +67,18 @@ int main(void) {
 
 		banderaBoton = gpio_ReadPin(&userBtn);
 
-		if(!banderaBoton && Bandera){
-			if(periodo > 100){
-				displayTimer.TIMx_Config.TIMx_Period -= 100;
-				timer_Config(&displayTimer);
-				timer_SetState(&displayTimer, TIMER_ON);
-			}
-			else{
-				periodo = 1001;
-			}
-
-		}
-
 		if(Bandera){
+			if (!banderaBoton){
+				if(periodo > 100){
+					periodo -= 100;
+					displayTimer.TIMx_Config.TIMx_Period = periodo;
+					timer_Config(&displayTimer);
+					timer_SetState(&displayTimer, TIMER_ON);
+				}
+				else{
+					periodo = 1005;
+				}
+			}
 			gpio_TooglePin(&userLed);
 			Bandera = 0;
 		}
