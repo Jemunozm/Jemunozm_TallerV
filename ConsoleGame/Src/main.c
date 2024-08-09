@@ -18,51 +18,38 @@
 
 #include <stdint.h>
 
-#define RCC_BASE_ADDRESS 0x40023800
-#define RCC_AHB1ENR_OFFSET 0x30
-#define GPIOA_ADDRES 0x40020000UL
-
-unsigned int RCC_AHB1ENR = 0x40023800UL | 0x30;
-unsigned int *registerAHB1enb;
-
-unsigned int gpioA_Moder = GPIOA_ADDRES;
-unsigned int gpioA_OutRegister = GPIOA_ADDRES | 0x14;
-unsigned int *registerAHB1enb;
-unsigned int *registerMod;
-unsigned int *registerOut;
-int bool = 0;
-
-unsigned int day;
+	uint8_t banda = 0;
+	uint8_t banda1 = 0;
+	uint8_t banda3 = 0;
+	uint8_t fila1 = 0;
+	uint8_t fila2 = 0;
+	uint8_t fila3 = 0;
+	uint8_t fila4 = 0;
+	uint8_t fila5 = 0;
+	uint8_t fila6 = 0;
+	uint8_t fila7 = 0;
+	uint8_t fila8 = 0;
 
 int main(void) {
-	registerAHB1enb = (unsigned int*) RCC_AHB1ENR;
-	unsigned int var = 0;
-	var |= 1;
-	* registerAHB1enb |= var;
 
-	registerMod = (unsigned int*) gpioA_Moder;
-	unsigned int var1 = 0;
-	var1 |= 1 << 10;
-	* registerMod |= var1;
+	fila1 = 77;
+	fila2 = (0xAC & 0xDC) >> 0x2;
+	fila3 = (uint8_t) (((!!0xB) << 0b0100)| (~0x97));
+	fila4 = (uint8_t) (0xCAFE & 0xC0C0) >> 8;
+	//3min 25s = 60*3 + 25 = 205
+	fila5 = (uint8_t) 205;
+	fila6 = 21*4;
+	fila7 = (uint8_t) 73 | 70;
+	fila8 = 24;
 
-	registerOut = (unsigned int*) gpioA_OutRegister;
-	unsigned int var2 = 0;
 
-	var2 |= 1 << 5;
-	* registerOut |= var2;
-	bool = 1;
+
+
+
 
 	/* Loop forever */
 	while (1) {
-		if(bool){
-			unsigned int aux = ~var2;
-			* registerOut &= (aux);
-			bool= 0;
-		}
-		else{
-			* registerOut |= var2;
-			bool = 1;
+
 		}
 
 	}
-}
