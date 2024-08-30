@@ -18,74 +18,68 @@ USART_Handler_t usart2 = { 0 };
 GPIO_Handler_t usart2t = { 0 };
 
 Timer_Handler_t blinkTimer = { 0 };
+Timer_Handler_t usartRefresh = { 0 };
 GPIO_Handler_t userLed = { 0 };
 GPIO_Handler_t userLed1 = { 0 };
+GPIO_Handler_t userLed2 = { 0 };
+GPIO_Handler_t userLed3 = { 0 };
 
 EXTI_Config_t imprimir = {0};
 GPIO_Handler_t user13 = {0};
 
-//USART_Handler_t usart2rx = {0};
 GPIO_Handler_t usart2trx = {0};
 
 char bufferMsg[128] = {0};
+char bufferMsgVar[128] = {0};
 
 
 uint8_t bandera = 0;
 uint8_t sendMsg = 0;
 uint8_t receivedChar = 0;
+uint8_t posicionSafe = 0;
+uint8_t msglisto = 0;
+uint8_t conteo = 0;
 
 void initSys(void);
-//void analyzeCommand(char *buffer);
+void analyzeCommand(char *buffer);
 
 int main() {
 	// llamamosala funcion que cuenta con toda la configuración
 	initSys();
 	// mandamos un holamundo de cuando la configuración estácargada
-	usart_writeMsg(&usart2, "Hola mundo \r");
+	usart_writeMsg(&usart2, "Escribe help para abrir el manual de instrucciones \n\n");
 	while (1) {
 
-		if (receivedChar){
-			if(receivedChar == 'P'){
-				usart_writeMsg(&usart2, "Testing, Testing!!\n\r");
+		if(sendMsg){
+			usart_writeMsg(&usart2, "Escribe un comando\n");
+			sprintf(bufferMsgVar, "has hecho blinky %d\n\n", conteo);
+			usart_writeMsg(&usart2, bufferMsgVar);
+			sendMsg = 0;
+		}
+		if(receivedChar){
+			if(receivedChar == ' '){
+				msglisto = 1;
 			}
-			if(receivedChar == 's'){
-				usart_writeMsg(&usart2, "Hola \n\r");
-			}
-			if(receivedChar == 'C'){
-				usart_writeMsg(&usart2, "led on \n\r");
-				gpio_WritePin(&userLed1, SET);
-			}
-			if(receivedChar == 'S'){
-				usart_writeMsg(&usart2, "led off \n\r");
-				gpio_WritePin(&userLed1, RESET);
+			else{
+				bufferMsg[posicionSafe] = receivedChar;
+				posicionSafe++;
 			}
 			receivedChar = 0;
 		}
-//
-//		// Cuando recibimos un dato se levanta la bandera.
-//		if (rxData != 0) {
-//			/* si este dato pertence a las letras claves de la tarea
-//			 * se guardará en un buffer y se levantará otra bandera.
-//			 */
-//			if (isLetterCode(rxData)) {
-//				strcat(commandBuffer, (char*) &rxData);
-//				commandFlag = 1;
-//			}
-//			// bajamos la bandera de cuando se recibe un dato.
-//			rxData = 0;
-//		}
+
 //		/*
 //		 * Si la bandera está activa entraremos al buffer donde guardamos la letra
-//		 * y lo comparamos dentro de lafuncion analizeCommand donde tenemos
-//		 * las funciones para letra presionada ademas delmensaje que se debe enviar.
+//		 * y lo comparamos dentro de la funcion analizeCommand donde tenemos
+//		 * las funciones para comando presionado ademas del mensaje que se debe enviar.
 //		 */
-//		if (commandFlag) {
-//			analyzeCommand(commandBuffer);
-//			for (int i = 0; i < sizeof(commandBuffer); i++) {
-//				commandBuffer[i] = 0;
-//			}
-//			commandFlag = 0;
-//		}
+		if (msglisto) {
+			analyzeCommand(bufferMsg);
+			for (uint8_t i = 0; i < sizeof(bufferMsg); i++) {
+				bufferMsg[i] = 0;
+			}
+			posicionSafe=0;
+			msglisto = 0;
+		}
 	}
 }
 
@@ -100,6 +94,16 @@ void initSys(void) {
 	timer_Config(&blinkTimer);
 	timer_SetState(&blinkTimer, SET);
 
+	/* Configuramos el timer del blink (TIM2) */
+	usartRefresh.pTIMx = TIM3;
+	usartRefresh.TIMx_Config.TIMx_Prescaler = 16000;
+	usartRefresh.TIMx_Config.TIMx_Period = 1000;
+	usartRefresh.TIMx_Config.TIMx_mode = TIMER_UP_COUNTER;
+	usartRefresh.TIMx_Config.TIMx_InterruptEnable = TIMER_INT_ENABLE;
+
+	timer_Config(&usartRefresh);
+	timer_SetState(&usartRefresh, SET);
+
 	//Configuramos los pines que se van a utilizar
 
 	/* Configuramos el PinA5 */
@@ -113,8 +117,28 @@ void initSys(void) {
 	gpio_Config(&userLed);
 
 	/* Configuramos el PinA9 */
+	userLed3.pGPIOx = GPIOA;
+	userLed3.pinConfig.GPIO_PinNumber = PIN_9;
+	userLed3.pinConfig.GPIO_PinMode = GPIO_MODE_OUT;
+	userLed3.pinConfig.GPIO_PinOutputType = GPIO_OTYPE_PUSHPULL;
+	userLed3.pinConfig.GPIO_PinOutputSpeed = GPIO_OSPEED_MEDIUM;
+	userLed3.pinConfig.GPIO_PinPuPdControl = GPIO_PUPDR_NOTHING;
+
+	gpio_Config(&userLed3);
+
+	/* Configuramos el PinA8 */
+	userLed2.pGPIOx = GPIOA;
+	userLed2.pinConfig.GPIO_PinNumber = PIN_8;
+	userLed2.pinConfig.GPIO_PinMode = GPIO_MODE_OUT;
+	userLed2.pinConfig.GPIO_PinOutputType = GPIO_OTYPE_PUSHPULL;
+	userLed2.pinConfig.GPIO_PinOutputSpeed = GPIO_OSPEED_MEDIUM;
+	userLed2.pinConfig.GPIO_PinPuPdControl = GPIO_PUPDR_NOTHING;
+
+	gpio_Config(&userLed2);
+
+	/* Configuramos el PinA9 */
 	userLed1.pGPIOx = GPIOA;
-	userLed1.pinConfig.GPIO_PinNumber = PIN_9;
+	userLed1.pinConfig.GPIO_PinNumber = PIN_7;
 	userLed1.pinConfig.GPIO_PinMode = GPIO_MODE_OUT;
 	userLed1.pinConfig.GPIO_PinOutputType = GPIO_OTYPE_PUSHPULL;
 	userLed1.pinConfig.GPIO_PinOutputSpeed = GPIO_OSPEED_MEDIUM;
@@ -143,16 +167,6 @@ void initSys(void) {
 
 	gpio_Config(&usart2t);
 
-	//usart2.transmisionBuffer[0] = 'H';
-	bufferMsg[0] = 'H';
-	bufferMsg[1] = 'o';
-	bufferMsg[2] = 'l';
-	bufferMsg[3] = 'a';
-	bufferMsg[4] = '\n';
-	bufferMsg[5] = 0;
-
-	usart_writeMsg(&usart2, bufferMsg);
-
 	usart2trx.pGPIOx = GPIOA;
 	usart2trx.pinConfig.GPIO_PinNumber = PIN_3;
 	usart2trx.pinConfig.GPIO_PinMode = GPIO_MODE_ALFTN;
@@ -177,53 +191,43 @@ void initSys(void) {
 }
 
 
-//void analyzeCommand(char *buffer) {
-//
-//	if (strcmp(commandBuffer, "T") == 0) {
-//		usart_writeMsg(&usart, "Communication on! testing!! \n\n");
-//	}
-//
-//	else if (strcmp(commandBuffer, "h") == 0) {
-//		usart_writeMsg(&usart, "- press h to help \n\n - press T to testing \n\n - press O to light on led 1 \n\n - press R change state pin \n\n");
-//	}
-//
-//	else if (strcmp(commandBuffer, "O") == 0) {
-//		gpio_WritePin(&userLed1, SET);
-//	}
-//
-//	else if (strcmp(commandBuffer, "R") == 0) {
-//		gpio_TooglePin(&userLed1);
-//	}
-//
-////	else if (strcmp(commandBuffer, "R") == 0) {
-////		if (botonEncoder) {
-////			blinkTimer.TIMx_Config.TIMx_Period = 50;
-////			timer_Config(&blinkTimer);
-////			timer_SetState(&blinkTimer, SET);
-////			sprintf(bufferPrint, "new period timer \n\n");
-////			usart_writeMsg(&usart, bufferPrint);
-////		} else {
-////			gpio_TooglePin(&userLed1);
-////			sprintf(bufferPrint, "new pin state \n\n");
-////			usart_writeMsg(&usart, bufferPrint);
-////		}
-////	}
-//}
+void analyzeCommand(char *buffer) {
 
-/*
- * Función que analiza si el valor que entra pertenece
- * a un grupo de caracteres especificos.
- */
-//uint8_t isLetterCode(char caracter) {
-//	if (caracter == 'a' || caracter == 'p' || caracter == 'm'
-//			|| caracter == 'd') {
-//		return 1;
-//	}
-//	return 0;
-//}
+	if (strcmp(buffer, "help") == 0) {
+		usart_writeMsg(&usart2, "1. Escribe L3ON para enceder pinA9 \n\n");
+		usart_writeMsg(&usart2, "2. Escribe L2ON para enceder pinA8 \n\n");
+		usart_writeMsg(&usart2, "3. Escribe L1ON para enceder pinA7 \n\n");
+		usart_writeMsg(&usart2, "4. Escribe P50TB coloca el periodo del blinky en 50ms \n\n");
+		usart_writeMsg(&usart2, "5. Escribe P500TI coloca el periodo de la impresion en 500ms \n\n");
+		usart_writeMsg(&usart2, "6. Escribe IC imprime el valor del contador \n\n");
+		usart_writeMsg(&usart2, "7. Escribe BON habilita el boton \n\n");
+		usart_writeMsg(&usart2, "8. Escribe BOFF deshabilita el boton \n\n");
+		usart_writeMsg(&usart2, "9. Escribe RESET reincia el sistema \n\n");
+	}
+
+	else if (strcmp(buffer, "L3ON") == 0) {
+		usart_writeMsg(&usart2, "Haz encedido el LED 3 \n PinA9 \n\n");
+		gpio_WritePin(&userLed3, SET);
+	}
+	else if (strcmp(buffer, "L2ON") == 0) {
+		usart_writeMsg(&usart2, "Haz encedido el LED 2 \n PinA8 \n\n");
+		gpio_WritePin(&userLed2, SET);
+	}
+	else if (strcmp(buffer, "L1ON") == 0) {
+		usart_writeMsg(&usart2, "Haz encedido el LED 1 \n PinA7 \n\n");
+		gpio_WritePin(&userLed1, SET);
+	}
+	else{
+		usart_writeMsg(&usart2, "Escriba bien aguevado\n\n");
+	}
+
+}
 
 void Timer2_Callback(void) {
 	gpio_TooglePin(&userLed);
+	conteo++;
+}
+void Timer3_Callback(void) {
 	sendMsg = 1;
 }
 
@@ -232,6 +236,5 @@ void callback_ExtInt13(void){
 }
 void usart2_RxCallback(void){
 	receivedChar = usart_getRxData2();
-//	rxData = usart_getRxData2();
 }
 
