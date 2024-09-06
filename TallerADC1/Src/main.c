@@ -54,6 +54,7 @@ void analyzeCommand(char *buffer);
 
 int main() {
 	// llamamosala funcion que cuenta con toda la configuración
+
 	initSys();
 
 //	//Colocamos la flag de adc en 1 pára no pdepender de la primera interrupción
@@ -62,13 +63,13 @@ int main() {
 	usart_writeMsg(&usart2, "Escribe help para abrir el manual de instrucciones \n\n");
 	while (1) {
 
-		if(flagADC & flagADCON){
-			sprintf(bufferMsg,"%d\n",osciloscopio.adcData);
-			usart_writeMsg(&usart2, bufferMsg);
-			flagADC = 0;
-
-			adc_StartSingleConv();
-		}
+//		if(flagADC & flagADCON){
+//			sprintf(bufferMsg,"%d\n",osciloscopio.adcData);
+//			usart_writeMsg(&usart2, bufferMsg);
+//			flagADC = 0;
+//
+//			adc_StartSingleConv();
+//		}
 
 //		if(sendMsg){
 //			usart_writeMsg(&usart2, "Escribe un comando\n");
@@ -76,30 +77,30 @@ int main() {
 //			usart_writeMsg(&usart2, bufferMsgVar);
 //			sendMsg = 0;
 //		}
-		if(receivedChar){
-			if(receivedChar == ' '){
-				msglisto = 1;
-			}
-			else{
-				bufferMsg[posicionSafe] = receivedChar;
-				posicionSafe++;
-			}
-			receivedChar = 0;
-		}
+//		if(receivedChar){
+//			if(receivedChar == ' '){
+//				msglisto = 1;
+//			}
+//			else{
+//				bufferMsg[posicionSafe] = receivedChar;
+//				posicionSafe++;
+//			}
+//			receivedChar = 0;
+//		}
 
 //		/*
 //		 * Si la bandera está activa entraremos al buffer donde guardamos la letra
 //		 * y lo comparamos dentro de la funcion analizeCommand donde tenemos
 //		 * las funciones para comando presionado ademas del mensaje que se debe enviar.
 //		 */
-		if (msglisto) {
-			analyzeCommand(bufferMsg);
-			for (uint8_t i = 0; i < sizeof(bufferMsg); i++) {
-				bufferMsg[i] = 0;
-			}
-			posicionSafe=0;
-			msglisto = 0;
-		}
+//		if (msglisto) {
+//			analyzeCommand(bufferMsg);
+//			for (uint8_t i = 0; i < sizeof(bufferMsg); i++) {
+//				bufferMsg[i] = 0;
+//			}
+//			posicionSafe=0;
+//			msglisto = 0;
+//		}
 	}
 }
 
@@ -126,17 +127,18 @@ void initSys(void) {
 
 	/* Configuramos el PWM */
 	blinkTimer.pTIMx = TIM2;
-	blinkTimer.TIMx_Config.TIMx_Prescaler = 1600;
+	blinkTimer.TIMx_Config.TIMx_Prescaler = 16000;
+	blinkTimer.TIMx_Config.TIMx_Period = 2000;
 	blinkTimer.TIMx_Config.TIMx_mode = TIMER_UP_COUNTER;
 	blinkTimer.TIMx_Config.TIMx_InterruptEnable = TIMER_INT_ENABLE;
 	timer_Config(&blinkTimer);
 	timer_SetState(&blinkTimer, TIMER_ON);
 
 	rgb.ptrTIMx = TIM2;
-	rgb.config.prescaler = 1600;
-	rgb.config.periodo = 255;
+	rgb.config.prescaler = 16000;
+	rgb.config.periodo = 250;
 	rgb.config.channel = PWM_CHANNEL_2;
-	rgb.config.duttyCicle = 250;
+	rgb.config.duttyCicle = 200;
 
 	pwm_Config(&rgb);
 	startPwmSignal(&rgb);
