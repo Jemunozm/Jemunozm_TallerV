@@ -1,0 +1,320 @@
+/**
+ ******************************************************************************
+ * @file           : main.c
+ * @author         : ImJeviz
+ * @brief          : Main program body
+ ******************************************************************************
+ */
+
+#include <stdint.h>
+#include <string.h>
+#include <stm32f4xx.h>
+#include "gpio_driver_hal.h"
+#include "timer_driver_hal.h"
+#include "exti_driver_hal.h"
+#include "usart_driver_hal.h"
+#include "adc_driver_hal.h"
+#include "pwm_driver_hal.h"
+
+USART_Handler_t usart2 = { 0 };
+GPIO_Handler_t usart2t = { 0 };
+ADC_Config_t osciloscopio = {0};
+PWM_Handler_t rgb = {0};
+GPIO_Handler_t rgbPin = {0};
+
+Timer_Handler_t blinkTimer = { 0 };
+Timer_Handler_t adcTimer = { 0 };
+Timer_Handler_t usartRefresh = { 0 };
+GPIO_Handler_t userLed = { 0 };
+GPIO_Handler_t userLed1 = { 0 };
+GPIO_Handler_t userLed2 = { 0 };
+GPIO_Handler_t userLed3 = { 0 };
+
+EXTI_Config_t imprimir = {0};
+GPIO_Handler_t user13 = {0};
+
+GPIO_Handler_t usart2trx = {0};
+
+char bufferMsg[128] = {0};
+char bufferMsgVar[128] = {0};
+
+
+uint8_t bandera = 0;
+uint8_t sendMsg = 0;
+uint8_t receivedChar = 0;
+uint8_t posicionSafe = 0;
+uint8_t msglisto = 0;
+uint8_t conteo = 0;
+uint8_t flagADC = 0;
+uint8_t flagADCON = 0;
+uint8_t AdcPrint = 0;
+
+void initSys(void);
+void analyzeCommand(char *buffer);
+
+int main() {
+	// llamamosala funcion que cuenta con toda la configuración
+	initSys();
+
+//	//Colocamos la flag de adc en 1 pára no pdepender de la primera interrupción
+//	flagADC = 1;
+	// mandamos un holamundo de cuando la configuración estácargada
+	usart_writeMsg(&usart2, "Escribe help para abrir el manual de instrucciones \n\n");
+	while (1) {
+
+		if(flagADC & flagADCON){
+			sprintf(bufferMsg,"%d\n",osciloscopio.adcData);
+			usart_writeMsg(&usart2, bufferMsg);
+			flagADC = 0;
+
+			adc_StartSingleConv();
+		}
+
+//		if(sendMsg){
+//			usart_writeMsg(&usart2, "Escribe un comando\n");
+//			sprintf(bufferMsgVar, "has hecho blinky %d\n\n", conteo);
+//			usart_writeMsg(&usart2, bufferMsgVar);
+//			sendMsg = 0;
+//		}
+		if(receivedChar){
+			if(receivedChar == ' '){
+				msglisto = 1;
+			}
+			else{
+				bufferMsg[posicionSafe] = receivedChar;
+				posicionSafe++;
+			}
+			receivedChar = 0;
+		}
+
+//		/*
+//		 * Si la bandera está activa entraremos al buffer donde guardamos la letra
+//		 * y lo comparamos dentro de la funcion analizeCommand donde tenemos
+//		 * las funciones para comando presionado ademas del mensaje que se debe enviar.
+//		 */
+		if (msglisto) {
+			analyzeCommand(bufferMsg);
+			for (uint8_t i = 0; i < sizeof(bufferMsg); i++) {
+				bufferMsg[i] = 0;
+			}
+			posicionSafe=0;
+			msglisto = 0;
+		}
+	}
+}
+
+void initSys(void) {
+//	/* Configuramos el timer del blink (TIM2) */
+//	blinkTimer.pTIMx = TIM2;
+//	blinkTimer.TIMx_Config.TIMx_Prescaler = 16000;
+//	blinkTimer.TIMx_Config.TIMx_Period = 1000;
+//	blinkTimer.TIMx_Config.TIMx_mode = TIMER_UP_COUNTER;
+//	blinkTimer.TIMx_Config.TIMx_InterruptEnable = TIMER_INT_ENABLE;
+//
+//	timer_Config(&blinkTimer);
+//	timer_SetState(&blinkTimer, SET);
+
+	rgbPin.pGPIOx = GPIOA;
+	rgbPin.pinConfig.GPIO_PinMode = GPIO_MODE_ALFTN;
+	rgbPin.pinConfig.GPIO_PinNumber = PIN_1;
+	rgbPin.pinConfig.GPIO_PinAltFunMode = AF1;
+	rgbPin.pinConfig.GPIO_PinOutputType = GPIO_OTYPE_PUSHPULL;
+	rgbPin.pinConfig.GPIO_PinOutputSpeed = GPIO_OSPEED_MEDIUM;
+	rgbPin.pinConfig.GPIO_PinPuPdControl = GPIO_PUPDR_NOTHING;
+
+	gpio_Config(&rgbPin);
+
+	/* Configuramos el PWM */
+	blinkTimer.pTIMx = TIM2;
+	blinkTimer.TIMx_Config.TIMx_Prescaler = 1600;
+	blinkTimer.TIMx_Config.TIMx_mode = TIMER_UP_COUNTER;
+	blinkTimer.TIMx_Config.TIMx_InterruptEnable = TIMER_INT_ENABLE;
+	timer_Config(&blinkTimer);
+	timer_SetState(&blinkTimer, TIMER_ON);
+
+	rgb.ptrTIMx = TIM2;
+	rgb.config.prescaler = 1600;
+	rgb.config.periodo = 255;
+	rgb.config.channel = PWM_CHANNEL_2;
+	rgb.config.duttyCicle = 250;
+
+	pwm_Config(&rgb);
+	startPwmSignal(&rgb);
+
+
+
+	/* Configuramos el timer del blink (TIM2) */
+	adcTimer.pTIMx = TIM5;
+	adcTimer.TIMx_Config.TIMx_Prescaler = 16000;
+	adcTimer.TIMx_Config.TIMx_Period = 2;
+	adcTimer.TIMx_Config.TIMx_mode = TIMER_UP_COUNTER;
+	adcTimer.TIMx_Config.TIMx_InterruptEnable = TIMER_INT_ENABLE;
+
+	timer_Config(&adcTimer);
+	timer_SetState(&adcTimer, SET);
+
+	/* Configuramos el timer del blink (TIM2) */
+	usartRefresh.pTIMx = TIM3;
+	usartRefresh.TIMx_Config.TIMx_Prescaler = 16000;
+	usartRefresh.TIMx_Config.TIMx_Period = 1000;
+	usartRefresh.TIMx_Config.TIMx_mode = TIMER_UP_COUNTER;
+	usartRefresh.TIMx_Config.TIMx_InterruptEnable = TIMER_INT_ENABLE;
+
+	timer_Config(&usartRefresh);
+	timer_SetState(&usartRefresh, SET);
+
+	//Configuramos los pines que se van a utilizar
+
+	/* Configuramos el PinA5 */
+	userLed.pGPIOx = GPIOA;
+	userLed.pinConfig.GPIO_PinNumber = PIN_5;
+	userLed.pinConfig.GPIO_PinMode = GPIO_MODE_OUT;
+	userLed.pinConfig.GPIO_PinOutputType = GPIO_OTYPE_PUSHPULL;
+	userLed.pinConfig.GPIO_PinOutputSpeed = GPIO_OSPEED_MEDIUM;
+	userLed.pinConfig.GPIO_PinPuPdControl = GPIO_PUPDR_NOTHING;
+
+	gpio_Config(&userLed);
+
+	/* Configuramos el PinA9 */
+	userLed3.pGPIOx = GPIOA;
+	userLed3.pinConfig.GPIO_PinNumber = PIN_9;
+	userLed3.pinConfig.GPIO_PinMode = GPIO_MODE_OUT;
+	userLed3.pinConfig.GPIO_PinOutputType = GPIO_OTYPE_PUSHPULL;
+	userLed3.pinConfig.GPIO_PinOutputSpeed = GPIO_OSPEED_MEDIUM;
+	userLed3.pinConfig.GPIO_PinPuPdControl = GPIO_PUPDR_NOTHING;
+
+	gpio_Config(&userLed3);
+
+	/* Configuramos el PinA8 */
+	userLed2.pGPIOx = GPIOA;
+	userLed2.pinConfig.GPIO_PinNumber = PIN_8;
+	userLed2.pinConfig.GPIO_PinMode = GPIO_MODE_OUT;
+	userLed2.pinConfig.GPIO_PinOutputType = GPIO_OTYPE_PUSHPULL;
+	userLed2.pinConfig.GPIO_PinOutputSpeed = GPIO_OSPEED_MEDIUM;
+	userLed2.pinConfig.GPIO_PinPuPdControl = GPIO_PUPDR_NOTHING;
+
+	gpio_Config(&userLed2);
+
+	/* Configuramos el PinA9 */
+	userLed1.pGPIOx = GPIOA;
+	userLed1.pinConfig.GPIO_PinNumber = PIN_7;
+	userLed1.pinConfig.GPIO_PinMode = GPIO_MODE_OUT;
+	userLed1.pinConfig.GPIO_PinOutputType = GPIO_OTYPE_PUSHPULL;
+	userLed1.pinConfig.GPIO_PinOutputSpeed = GPIO_OSPEED_MEDIUM;
+	userLed1.pinConfig.GPIO_PinPuPdControl = GPIO_PUPDR_NOTHING;
+
+	gpio_Config(&userLed1);
+
+	usart2.ptrUSARTx = USART2;
+	usart2.USART_Config.baudrate = USART_BAUDRATE_230400;
+	usart2.USART_Config.datasize = USART_DATASIZE_8BIT;
+	usart2.USART_Config.mode = USART_MODE_RXTX;
+	usart2.USART_Config.parity = USART_PARITY_NONE;
+	usart2.USART_Config.stopbits = USART_STOPBIT_1;
+	usart2.USART_Config.enableIntTX = USART_TX_INTERRUP_DISABLE;
+	usart2.USART_Config.enableIntRX = USART_RX_INTERRUP_ENABLE;
+
+	usart_Config(&usart2);
+
+	usart2t.pGPIOx = GPIOA;
+	usart2t.pinConfig.GPIO_PinNumber = PIN_2;
+	usart2t.pinConfig.GPIO_PinMode = GPIO_MODE_ALFTN;
+	usart2t.pinConfig.GPIO_PinOutputType = GPIO_OTYPE_PUSHPULL;
+	usart2t.pinConfig.GPIO_PinOutputSpeed = GPIO_OSPEED_MEDIUM;
+	usart2t.pinConfig.GPIO_PinPuPdControl = GPIO_PUPDR_NOTHING;
+	usart2t.pinConfig.GPIO_PinAltFunMode = AF7;
+
+	gpio_Config(&usart2t);
+
+	usart2trx.pGPIOx = GPIOA;
+	usart2trx.pinConfig.GPIO_PinNumber = PIN_3;
+	usart2trx.pinConfig.GPIO_PinMode = GPIO_MODE_ALFTN;
+	usart2trx.pinConfig.GPIO_PinOutputType = GPIO_OTYPE_PUSHPULL;
+	usart2trx.pinConfig.GPIO_PinOutputSpeed = GPIO_OSPEED_MEDIUM;
+	usart2trx.pinConfig.GPIO_PinPuPdControl = GPIO_PUPDR_NOTHING;
+	usart2trx.pinConfig.GPIO_PinAltFunMode = AF7;
+
+	gpio_Config(&usart2trx);
+
+	user13.pGPIOx = GPIOC;
+	user13.pinConfig.GPIO_PinNumber = PIN_13;
+	user13.pinConfig.GPIO_PinMode = GPIO_MODE_IN;
+
+	gpio_Config(&user13);
+
+	imprimir.pGPIOHandler = &user13;
+	imprimir.edgeType = EXTERNAL_INTERRUPT_FALLING_EDGE;
+
+	exti_Config(&imprimir);
+
+	osciloscopio.channel 		= CHANNEL_0;
+	osciloscopio.dataAlignment  = ALIGNMENT_RIGHT;
+	osciloscopio.interrupState  = ADC_INT_ENABLE;
+	osciloscopio.resolution 	= RESOLUTION_12_BIT;
+	osciloscopio.samplingPeriod = SAMPLING_PERIOD_84_CYCLES;
+
+	adc_ConfigSingleChannel(&osciloscopio);
+
+}
+
+
+void analyzeCommand(char *buffer) {
+
+	if (strcmp(buffer, "help") == 0) {
+		usart_writeMsg(&usart2, "1. Escribe L3ON para enceder pinA9 \n\n");
+		usart_writeMsg(&usart2, "2. Escribe L2ON para enceder pinA8 \n\n");
+		usart_writeMsg(&usart2, "3. Escribe L1ON para enceder pinA7 \n\n");
+		usart_writeMsg(&usart2, "4. Escribe P50TB coloca el periodo del blinky en 50ms \n\n");
+		usart_writeMsg(&usart2, "5. Escribe P500TI coloca el periodo de la impresion en 500ms \n\n");
+		usart_writeMsg(&usart2, "6. Escribe IC imprime el valor del contador \n\n");
+		usart_writeMsg(&usart2, "7. Escribe BON habilita el boton \n\n");
+		usart_writeMsg(&usart2, "8. Escribe BOFF deshabilita el boton \n\n");
+		usart_writeMsg(&usart2, "9. Escribe ADC para iniciar la conversion \n\n");
+		usart_writeMsg(&usart2, "10. Escribe RESET reincia el sistema \n\n");
+	}
+	else if(strcmp(buffer, "ADC") == 0){
+		adc_StartSingleConv();
+		usart_writeMsg(&usart2, "\n\n\n\n\n\n\n\n\n\n\n\n");
+		flagADCON = 1;
+	}
+
+	else if (strcmp(buffer, "L3ON") == 0) {
+		usart_writeMsg(&usart2, "Haz encedido el LED 3 \n PinA9 \n\n");
+		gpio_WritePin(&userLed3, SET);
+	}
+	else if (strcmp(buffer, "L2ON") == 0) {
+		usart_writeMsg(&usart2, "Haz encedido el LED 2 \n PinA8 \n\n");
+		gpio_WritePin(&userLed2, SET);
+	}
+	else if (strcmp(buffer, "L1ON") == 0) {
+		usart_writeMsg(&usart2, "Haz encedido el LED 1 \n PinA7 \n\n");
+		gpio_WritePin(&userLed1, SET);
+	}
+	else{
+		usart_writeMsg(&usart2, "Escriba bien aguevado\n\n");
+	}
+
+}
+
+void Timer2_Callback(void) {
+	gpio_TooglePin(&userLed);
+}
+void Timer3_Callback(void) {
+	sendMsg = 1;
+}
+
+void Timer5_Callback(void) {
+	AdcPrint = 1;
+}
+
+void callback_ExtInt13(void){
+	bandera = 1;
+}
+void usart2_RxCallback(void){
+	receivedChar = usart_getRxData2();
+}
+void adc_CompleteCallback(void){
+	flagADC = 1;
+	osciloscopio.adcData = adc_GetValue();
+}
+
