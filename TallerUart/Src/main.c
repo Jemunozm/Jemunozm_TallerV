@@ -51,7 +51,7 @@ int main() {
 	while (1) {
 
 		if(sendMsg){
-			usart_writeMsg(&usart2, "Escribe un comando\n");
+			usart_writeMsg(&usart2, "TALLER V ROCK!\n");
 			sprintf(bufferMsgVar, "has hecho blinky %d\n\n", conteo);
 			usart_writeMsg(&usart2, bufferMsgVar);
 			sendMsg = 0;
