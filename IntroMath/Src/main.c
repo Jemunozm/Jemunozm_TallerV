@@ -68,12 +68,14 @@ uint8_t pinG = 0;
 
 //Variables auxiliares que nos ayudaran en el codigo
 uint8_t flagRefresh = 0; //Bandera que indica el momento en que se debe refrescar el 7 segmentos
-uint8_t flagBtnYes 	= 0; //Baandera que ocurre cuando se presiona el boton que inidica SI.
-uint8_t flagBtnNo 	= 0; //Baandera que ocurre cuando se presiona el boton que inidica NO.
+uint8_t flagBtnYes 	= 0; //Bandera que ocurre cuando se presiona el boton que inidica SI.
+uint8_t flagBtnNo 	= 0; //Bandera que ocurre cuando se presiona el boton que inidica NO.
 
 
 //llamamos las funciones definidas al final del codigo
 void initSystem(void);
+void initGPIO(void);
+void initTimers(void);
 void write7segments(uint8_t *numero);
 void transistorSwitch(uint8_t *option);
 void suma(uint8_t *conteo);
@@ -122,6 +124,14 @@ int main(void) {
 
 
 void initSystem(void){
+	initGPIO();
+	initTimers();
+	gpio_WritePin(&userLed, SET);
+
+}
+
+
+void initGPIO(void){
 	//Configuramos los pines que se van a utilizar
 
 	/* Configuramos el PinA5 */
@@ -212,6 +222,9 @@ void initSystem(void){
 	//Cargamos la configuracion  en los registros que gobiernan el puerto.
 	gpio_Config(&userLedG);
 
+}
+
+void initTimers(void){
 	//Configuramos los timers
 
 	/* Configuramos el timer del blink (TIM2) */
@@ -221,10 +234,10 @@ void initSystem(void){
 	blinkTimer.TIMx_Config.TIMx_mode = TIMER_UP_COUNTER;
 	blinkTimer.TIMx_Config.TIMx_InterruptEnable = TIMER_INT_ENABLE;
 
-	//Cargamos la configuracion del timers
+	//Cargamos la configuracion del timer
 	timer_Config(&blinkTimer);
 
-	//Encendemos el timers
+	//Encendemos el timer
 	timer_SetState(&blinkTimer, TIMER_ON);
 
 	/* Configuramos el timer del 7-segmentos (TIM4) */
@@ -234,14 +247,11 @@ void initSystem(void){
 	displayTimer.TIMx_Config.TIMx_mode = TIMER_UP_COUNTER;
 	displayTimer.TIMx_Config.TIMx_InterruptEnable = TIMER_INT_ENABLE;
 
-	//Cargamos la configuracion del timers
+	//Cargamos la configuracion del timer
 	timer_Config(&displayTimer);
 
-	//Encendemos el timers
+	//Encendemos el timer
 	timer_SetState(&displayTimer, TIMER_ON);
-
-	gpio_WritePin(&userLed, SET);
-
 }
 
 void Timer2_Callback(void) {
