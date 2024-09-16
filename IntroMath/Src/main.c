@@ -29,6 +29,16 @@ enum {
 	unidadM
 };
 
+enum {
+	Led0 = 0,
+	Led1,
+	Led2,
+	Led3,
+	Led4,
+	Led5,
+	Led6
+};
+
 //Definimos los pines que se van a utilizar.
 GPIO_Handler_t userLed 			= { 0 }; // PinA5
 GPIO_Handler_t userLedA 		= { 0 }; // PinC6
@@ -86,8 +96,10 @@ uint8_t flagBtnYes 	= 0; //Bandera que ocurre cuando se presiona el boton que in
 uint8_t flagBtnNo 	= 0; //Bandera que ocurre cuando se presiona el boton que inidica NO.
 
 //Buffer de datos para imprimir por usart
+char bufferPrint[256] = { 0 };
 
-char bufferPrint[128] = { 0 };
+//Variables de ayuda durante el codigo
+uint8_t caso = 0; //variable que tiene en cuenta los casos para saber a que bit se refiere para encender dicho led
 
 //llamamos las funciones definidas al final del codigo
 void initSystem(void);
@@ -107,19 +119,96 @@ int main(void) {
 			sprintf(bufferPrint, "Empezar nuevo juego\n");
 			usart_writeMsg(&usartHojas, bufferPrint);
 		}
-		if(flagBtnYes){
-			sprintf(bufferPrint, "\n\n\n\n\n\n\n\n\n\n\n\n\n"
-					"TU NUMERO SE ENCUENTRA AQUI (PRESS BOTON AZUL = YES)\n\n"
-					" 1 	3	5	7	9	11	13	15	17	19\n"
-					" 21	23	25	27	29	31	33	35	37	39\n"
-					" 41	43	45	47	49	51	53	55	57	59\n"
-					" 61	63	65	67	69	71	73	75	77	79\n"
-					" 81	83	85	87	89	91	93	95	97	99\n");
-//					" 101	103	105	107	109	111	113	115	117	119\n"
-//					" 121	123	125	127	129	131	133	135	137	139\n"
-//					" 141	143	145	147	149	151	153	155	157	159\n"
-//					" 161	163	165	167	169	171	173	175	177	179\n"
-			usart_writeMsg(&usartHojas, bufferPrint);
+		if((flagBtnYes || flagBtnNo) && (caso != 7)){
+			switch(caso){
+			case Led0:{
+				sprintf(bufferPrint, "\n\n\n\n\n\n\n\n\n\n\n\n\n"
+						"TU NUMERO SE ENCUENTRA AQUI (PRESS BOTON AZUL = YES)\n\n"
+						" 1 	3	5	7	9	11	13	15	17	19\n"
+						" 21	23	25	27	29	31	33	35	37	39\n"
+						" 41	43	45	47	49	51	53	55	57	59\n"
+						" 61	63	65	67	69	71	73	75	77	79\n"
+						" 81	83	85	87	89	91	93	95	97	99\n");
+				usart_writeMsg(&usartHojas, bufferPrint);
+				caso++;
+				break;
+			}
+			case Led1:{
+				sprintf(bufferPrint, "\n\n\n\n\n\n\n\n\n\n\n\n\n"
+						"TU NUMERO SE ENCUENTRA AQUI (PRESS BOTON AZUL = YES)\n\n"
+						" 2 	3	6	7	10	11	14	15	18	19\n"
+						" 22	23	26	27	30	31	34	35	38	39\n"
+						" 42	43	46	47	50	51	54	55	58	59\n"
+						" 62	63	66	67	70	71	74	75	78	79\n"
+						" 82	83	86	87	90	91	94	95	98	99\n");
+				usart_writeMsg(&usartHojas, bufferPrint);
+				caso++;
+				break;
+			}
+			case Led2:{
+				sprintf(bufferPrint, "\n\n\n\n\n\n\n\n\n\n\n\n\n"
+						"TU NUMERO SE ENCUENTRA AQUI (PRESS BOTON AZUL = YES)\n\n"
+						" 4 	5	6	7	12	13	14	15\n"
+						" 20	21	22	23	28	29	30	31\n"
+						" 36	37	38	39	44	45	46	47\n"
+						" 52	53	54	55	60	61	62	63\n"
+						" 68	69	70	71	76	77	78	79\n"
+						" 84	85	86	87	92	93	94	95\n");
+				usart_writeMsg(&usartHojas, bufferPrint);
+				caso++;
+				break;
+			}
+			case Led3:{
+				sprintf(bufferPrint, "\n\n\n\n\n\n\n\n\n\n\n\n\n"
+						"TU NUMERO SE ENCUENTRA AQUI (PRESS BOTON AZUL = YES)\n\n"
+						" 8		9	10	11	12	13	14	15\n"
+						" 24	25	26	27	28	29	30	31\n"
+						" 40	41	42	43	44	45	46	47\n"
+						" 56	57	58	59	60	61	62	63\n"
+						" 72	73	74	75	76	77	78	79\n"
+						" 88	89	90	91	92	93	94	95\n");
+				usart_writeMsg(&usartHojas, bufferPrint);
+				caso++;
+				break;
+			}
+			case Led4:{
+				sprintf(bufferPrint, "\n\n\n\n\n\n\n\n\n\n\n\n\n"
+						"TU NUMERO SE ENCUENTRA AQUI (PRESS BOTON AZUL = YES)\n\n"
+						" 16	17	18	19	20	21	22	23\n"
+						" 24	25	26	27	28	29	30	31\n"
+						" 48	49	50	51	52	53	54	55\n"
+						" 56	57	58	59	60	61	62	63\n"
+						" 80	81	82	83	84	85	86	87\n"
+						" 88	89	90	91	92	93	94	95\n");
+				usart_writeMsg(&usartHojas, bufferPrint);
+				caso++;
+				break;
+			}
+			case Led5:{
+				sprintf(bufferPrint, "\n\n\n\n\n\n\n\n\n\n\n\n\n"
+						"TU NUMERO SE ENCUENTRA AQUI (PRESS BOTON AZUL = YES)\n\n"
+						" 32	33	34	35	36	37	38	39\n"
+						" 40	41	42	43	44	45	46	47\n"
+						" 48	49	50	51	52	53	54	55\n"
+						" 56	57	58	59	60	61	62	63\n"
+						" 96	97	98	99\n");
+				usart_writeMsg(&usartHojas, bufferPrint);
+				caso++;
+			}
+				break;
+			case Led6:{
+				sprintf(bufferPrint, "\n\n\n\n\n\n\n\n\n\n\n\n\n"
+						"TU NUMERO SE ENCUENTRA AQUI (PRESS BOTON AZUL = YES)\n\n"
+						" 64	65	66	67	68	69	70	71\n"
+						" 72	73	74	75	76	77	78	79\n"
+						" 80	81	82	83	84	85	86	87\n"
+						" 88	89	90	91	92	93	94	95\n"
+						" 96	97	98	99\n");
+				usart_writeMsg(&usartHojas, bufferPrint);
+				caso++;
+				break;
+			}
+			}
 		}
 	}
 }
@@ -256,22 +345,6 @@ void initTimers(void){
 	timer_SetState(&displayTimer, TIMER_ON);
 }
 
-void Timer2_Callback(void) {
-	flagRefresh = 1;
-}
-
-void Timer4_Callback(void) {
-	gpio_TooglePin(&userLed);
-}
-
-void callback_ExtInt10(void) {
-	flagBtnYes = 1;
-}
-
-void callback_ExtInt3(void) {
-	flagBtnNo = 1;
-}
-
 /*
  * Funcion que recibe como parametro una variable que
  * contiene un numero en binario, para así cambiar unas
@@ -361,10 +434,29 @@ void resta(uint8_t *conteo) {
 	*conteo -= 1;
 }
 
+
+void Timer2_Callback(void) {
+	flagRefresh = 1;
+}
+
+void Timer4_Callback(void) {
+	gpio_TooglePin(&userLed);
+}
+
+void callback_ExtInt10(void) {
+	flagBtnYes = 1;
+}
+
+void callback_ExtInt3(void) {
+	flagBtnNo = 1;
+}
+
+
 /*
  * Esta función sirve para detectar problemas de parametros
  * incorrectos al momento de ejecutar un programa.
  */
+
 void assert_failed(uint8_t *file, uint32_t line) {
 	while (1) {
 		//Problems
