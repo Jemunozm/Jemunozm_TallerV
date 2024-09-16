@@ -14,6 +14,21 @@
 #include "timer_driver_hal.h"
 #include "usart_driver_hal.h"
 
+//Creación de un enum con los cuatro posibles casos del encoder.
+enum {
+	restaDerecha = 0,
+	sumaDerecha,
+	sumaIzquierda,
+	restaIzquierda
+};
+
+enum {
+	unidad = 0,
+	decena,
+	centena,
+	unidadM
+};
+
 //Definimos los pines que se van a utilizar.
 GPIO_Handler_t userLed 			= { 0 }; // PinA5
 GPIO_Handler_t userLedA 		= { 0 }; // PinC6
@@ -65,12 +80,14 @@ uint8_t pinE = 0;
 uint8_t pinF = 0;
 uint8_t pinG = 0;
 
-
 //Variables auxiliares que nos ayudaran en el codigo
 uint8_t flagRefresh = 0; //Bandera que indica el momento en que se debe refrescar el 7 segmentos
 uint8_t flagBtnYes 	= 0; //Bandera que ocurre cuando se presiona el boton que inidica SI.
 uint8_t flagBtnNo 	= 0; //Bandera que ocurre cuando se presiona el boton que inidica NO.
 
+//Buffer de datos para imprimir por usart
+
+char bufferPrint[128] = { 0 };
 
 //llamamos las funciones definidas al final del codigo
 void initSystem(void);
@@ -81,32 +98,17 @@ void transistorSwitch(uint8_t *option);
 void suma(uint8_t *conteo);
 void resta(uint8_t *conteo);
 
-//Creación de un enum con los cuatro posibles casos del encoder.
-enum {
-	restaDerecha = 0,
-	sumaDerecha,
-	sumaIzquierda,
-	restaIzquierda
-};
-
-enum {
-	unidad = 0,
-	decena,
-	centena,
-	unidadM
-};
-
 int main(void) {
 
 	initSystem();
 
 	while (1) {
 		if(flagBtnNo && flagBtnYes){
-			sprintf(usartHojas.transmisionBuffer, "Empezar nuevo juego\n");
-			usart_writeMsg(&usartHojas, usartHojas.transmisionBuffer);
+			sprintf(bufferPrint, "Empezar nuevo juego\n");
+			usart_writeMsg(&usartHojas, bufferPrint);
 		}
 		if(flagBtnYes){
-			sprintf(usartHojas.transmisionBuffer, "\n\n\n\n\n\n\n\n\n\n\n\n\n"
+			sprintf(bufferPrint, "\n\n\n\n\n\n\n\n\n\n\n\n\n"
 					"TU NUMERO SE ENCUENTRA AQUI (PRESS BOTON AZUL = YES)\n\n"
 					" 1 	3	5	7	9	11	13	15	17	19\n"
 					" 21	23	25	27	29	31	33	35	37	39\n"
@@ -117,7 +119,7 @@ int main(void) {
 //					" 121	123	125	127	129	131	133	135	137	139\n"
 //					" 141	143	145	147	149	151	153	155	157	159\n"
 //					" 161	163	165	167	169	171	173	175	177	179\n"
-			usart_writeMsg(&usartHojas, usartHojas.transmisionBuffer);
+			usart_writeMsg(&usartHojas, bufferPrint);
 		}
 	}
 }
