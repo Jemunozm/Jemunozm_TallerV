@@ -36,7 +36,8 @@ enum {
 	Led3,
 	Led4,
 	Led5,
-	Led6
+	Led6,
+	imprimir
 };
 
 //Definimos los pines que se van a utilizar.
@@ -48,23 +49,30 @@ GPIO_Handler_t userLedD 		= { 0 }; // PinA9
 GPIO_Handler_t userLedE 		= { 0 }; // PinC9
 GPIO_Handler_t userLedF 		= { 0 }; // PinA7
 GPIO_Handler_t userLedG 		= { 0 }; // PinA8
+GPIO_Handler_t userLed0 		= { 0 }; //
+GPIO_Handler_t userLed1 		= { 0 }; //
+GPIO_Handler_t userLed2 		= { 0 }; //
+GPIO_Handler_t userLed3 		= { 0 }; //
+GPIO_Handler_t userLed4 		= { 0 }; //
+GPIO_Handler_t userLed5 		= { 0 }; //
+GPIO_Handler_t userLed6 		= { 0 }; //
 GPIO_Handler_t userTransistorU 	= { 0 }; //
 GPIO_Handler_t userTransistorD 	= { 0 }; //
 GPIO_Handler_t userTransistorC 	= { 0 }; //
 GPIO_Handler_t userTransistorUM = { 0 }; //
-GPIO_Handler_t usarTx			= { 0 };
-GPIO_Handler_t usarRx			= { 0 };
+GPIO_Handler_t usarTx			= { 0 }; //
+GPIO_Handler_t usarRx			= { 0 }; //
 
 //Definimos los timers que se emplearan.
-Timer_Handler_t blinkTimer 		= { 0 }; // Timer para el blinky PinA5
-Timer_Handler_t displayTimer 	= { 0 }; // Timer para el 7-segmentos
+Timer_Handler_t blinkTimer 		= { 0 }; // Timer para el blinky PinA5	TIM4
+Timer_Handler_t displayTimer 	= { 0 }; // Timer para el 7-segmentos	TIM2
 
 //Definimos las lineas EXTI que vamos a utilizar.
-EXTI_Config_t btnYes 			= { 0 }; //Exti linea 3 para el sw del encoder
-EXTI_Config_t btnNo 			= { 0 }; //Exti linea 13 para el ck del enconder.
+EXTI_Config_t btnYes 			= { 0 }; //Exti linea [] para el boton si
+EXTI_Config_t btnNo 			= { 0 }; //Exti linea [] para el boton no
 
 //Definimos el USART que vmaos a utilizar
-USART_Handler_t usartHojas			= { 0 };
+USART_Handler_t usartHojas			= { 0 }; //Tipo de usart por donde se va a comunicar
 
 /*
  * Creación de variables globales para convertir un numero de binario
@@ -100,26 +108,39 @@ char bufferPrint[256] = { 0 };
 
 //Variables de ayuda durante el codigo
 uint8_t caso = 0; //variable que tiene en cuenta los casos para saber a que bit se refiere para encender dicho led
+uint8_t conteo = 0; //Variable que guarda el numero que se adivinará
+uint8_t unidadValue = 0;//almacena el valor de la unidad para el 7segmentos
+uint8_t decenaValue = 0;//almacena el valor de la decena para el 7segmentos
+uint8_t flagRespuesta = 0;
 
 //llamamos las funciones definidas al final del codigo
 void initSystem(void);
 void initGPIO(void);
 void initTimers(void);
+void initExti(void);
+void initUsart(void);
 void write7segments(uint8_t *numero);
-void transistorSwitch(uint8_t *option);
+void transistorSwitch(void);
 void suma(uint8_t *conteo);
 void resta(uint8_t *conteo);
 
 int main(void) {
 
 	initSystem();
-
+	sprintf(bufferPrint, "Empezar nuevo juego\n");
+	usart_writeMsg(&usartHojas, bufferPrint);
 	while (1) {
-		if(flagBtnNo && flagBtnYes){
-			sprintf(bufferPrint, "Empezar nuevo juego\n");
-			usart_writeMsg(&usartHojas, bufferPrint);
+
+		if(flagRespuesta && flagRefresh){
+			transistorSwitch();
+			flagRefresh = 0;
+			if(flagBtnYes){
+				caso = 0;
+				flagRespuesta = 0;
+			}
 		}
-		if((flagBtnYes || flagBtnNo) && (caso != 7)){
+
+		if((flagBtnYes || flagBtnNo)){
 			switch(caso){
 			case Led0:{
 				sprintf(bufferPrint, "\n\n\n\n\n\n\n\n\n\n\n\n\n"
@@ -131,9 +152,15 @@ int main(void) {
 						" 81	83	85	87	89	91	93	95	97	99\n");
 				usart_writeMsg(&usartHojas, bufferPrint);
 				caso++;
+				flagBtnYes 	= 0;
+				flagBtnNo 	= 0;
 				break;
 			}
 			case Led1:{
+				if(flagBtnYes){
+					conteo |= 1;
+					gpio_WritePin(&userLed0, SET);
+				}
 				sprintf(bufferPrint, "\n\n\n\n\n\n\n\n\n\n\n\n\n"
 						"TU NUMERO SE ENCUENTRA AQUI (PRESS BOTON AZUL = YES)\n\n"
 						" 2 	3	6	7	10	11	14	15	18	19\n"
@@ -143,9 +170,15 @@ int main(void) {
 						" 82	83	86	87	90	91	94	95	98	99\n");
 				usart_writeMsg(&usartHojas, bufferPrint);
 				caso++;
+				flagBtnYes 	= 0;
+				flagBtnNo 	= 0;
 				break;
 			}
 			case Led2:{
+				if(flagBtnYes){
+					conteo |= 1<<1;
+					gpio_WritePin(&userLed1, SET);
+				}
 				sprintf(bufferPrint, "\n\n\n\n\n\n\n\n\n\n\n\n\n"
 						"TU NUMERO SE ENCUENTRA AQUI (PRESS BOTON AZUL = YES)\n\n"
 						" 4 	5	6	7	12	13	14	15\n"
@@ -156,9 +189,15 @@ int main(void) {
 						" 84	85	86	87	92	93	94	95\n");
 				usart_writeMsg(&usartHojas, bufferPrint);
 				caso++;
+				flagBtnYes 	= 0;
+				flagBtnNo 	= 0;
 				break;
 			}
 			case Led3:{
+				if(flagBtnYes){
+					conteo |= 1<<2;
+					gpio_WritePin(&userLed2, SET);
+				}
 				sprintf(bufferPrint, "\n\n\n\n\n\n\n\n\n\n\n\n\n"
 						"TU NUMERO SE ENCUENTRA AQUI (PRESS BOTON AZUL = YES)\n\n"
 						" 8		9	10	11	12	13	14	15\n"
@@ -169,9 +208,15 @@ int main(void) {
 						" 88	89	90	91	92	93	94	95\n");
 				usart_writeMsg(&usartHojas, bufferPrint);
 				caso++;
+				flagBtnYes 	= 0;
+				flagBtnNo 	= 0;
 				break;
 			}
 			case Led4:{
+				if(flagBtnYes){
+					conteo |= 1<<3;
+					gpio_WritePin(&userLed3, SET);
+				}
 				sprintf(bufferPrint, "\n\n\n\n\n\n\n\n\n\n\n\n\n"
 						"TU NUMERO SE ENCUENTRA AQUI (PRESS BOTON AZUL = YES)\n\n"
 						" 16	17	18	19	20	21	22	23\n"
@@ -182,9 +227,15 @@ int main(void) {
 						" 88	89	90	91	92	93	94	95\n");
 				usart_writeMsg(&usartHojas, bufferPrint);
 				caso++;
+				flagBtnYes 	= 0;
+				flagBtnNo 	= 0;
 				break;
 			}
 			case Led5:{
+				if(flagBtnYes){
+					conteo |= 1<<4;
+					gpio_WritePin(&userLed4, SET);
+				}
 				sprintf(bufferPrint, "\n\n\n\n\n\n\n\n\n\n\n\n\n"
 						"TU NUMERO SE ENCUENTRA AQUI (PRESS BOTON AZUL = YES)\n\n"
 						" 32	33	34	35	36	37	38	39\n"
@@ -194,9 +245,15 @@ int main(void) {
 						" 96	97	98	99\n");
 				usart_writeMsg(&usartHojas, bufferPrint);
 				caso++;
-			}
+				flagBtnYes 	= 0;
+				flagBtnNo 	= 0;
 				break;
+			}
 			case Led6:{
+				if(flagBtnYes){
+					conteo |= 1<<5;
+					gpio_WritePin(&userLed5, SET);
+				}
 				sprintf(bufferPrint, "\n\n\n\n\n\n\n\n\n\n\n\n\n"
 						"TU NUMERO SE ENCUENTRA AQUI (PRESS BOTON AZUL = YES)\n\n"
 						" 64	65	66	67	68	69	70	71\n"
@@ -206,6 +263,22 @@ int main(void) {
 						" 96	97	98	99\n");
 				usart_writeMsg(&usartHojas, bufferPrint);
 				caso++;
+				flagBtnYes 	= 0;
+				flagBtnNo 	= 0;
+				break;
+			}
+			case imprimir:{
+				if(flagBtnYes){
+					conteo |= 1<<6;
+					gpio_WritePin(&userLed6, SET);
+				}
+				sprintf(bufferPrint, "\n\n\n\n\n\n\n\n\n\n\n\n\n"
+						"SU NUMERO ES %d \n\n",conteo);
+				usart_writeMsg(&usartHojas, bufferPrint);
+				caso = 99;
+				flagRespuesta = 1;
+				flagBtnYes 	= 0;
+				flagBtnNo 	= 0;
 				break;
 			}
 			}
@@ -217,6 +290,8 @@ int main(void) {
 void initSystem(void){
 	initGPIO();
 	initTimers();
+	initExti();
+	initUsart();
 	gpio_WritePin(&userLed, SET);
 
 }
@@ -345,6 +420,15 @@ void initTimers(void){
 	timer_SetState(&displayTimer, TIMER_ON);
 }
 
+void initExti(void){
+
+}
+
+void initUsart(void){
+
+}
+
+
 /*
  * Funcion que recibe como parametro una variable que
  * contiene un numero en binario, para así cambiar unas
@@ -390,35 +474,45 @@ void write7segments(uint8_t *numero) {
  * colocará a funcionar un transistor y apagará el
  * resto de ellos.
  */
-void transistorSwitch(uint8_t *option){
-	switch(*option){
+void transistorSwitch(void){
+	uint8_t option = 0;
+	switch(option){
 	case unidad:{
 		gpio_WritePin(&userTransistorD, 	SET);
 		gpio_WritePin(&userTransistorC, 	SET);
 		gpio_WritePin(&userTransistorUM, 	SET);
+		write7segments(&unidadValue);
 		gpio_WritePin(&userTransistorU, 	RESET);
+		option++;
 		break;
 	}
 	case decena:{
 		gpio_WritePin(&userTransistorU, 	SET);
+		write7segments(&decenaValue);
 		gpio_WritePin(&userTransistorD, 	RESET);
+		option = 0;
 		break;
 	}
-	case centena:{
-		gpio_WritePin(&userTransistorD,	 	SET);
-		gpio_WritePin(&userTransistorC, 	RESET);
-		break;
-	}
-	case unidadM:{
-		gpio_WritePin(&userTransistorC, 	SET);
-		gpio_WritePin(&userTransistorUM, 	RESET);
-		break;
-	}
+//	case centena:{
+//		gpio_WritePin(&userTransistorD,	 	SET);
+//		write7segments(&centenaValue);
+//		gpio_WritePin(&userTransistorC, 	RESET);
+//		option++;
+//		break;
+//	}
+//	case unidadM:{
+//		gpio_WritePin(&userTransistorC, 	SET);
+//		write7segments(&unidadMValue);
+//		gpio_WritePin(&userTransistorUM, 	RESET);
+//		option = 0;
+//		break;
+//	}
 	default:{
 		gpio_WritePin(&userTransistorD, 	SET);
 		gpio_WritePin(&userTransistorC, 	SET);
 		gpio_WritePin(&userTransistorUM, 	SET);
 		gpio_WritePin(&userTransistorU, 	SET);
+		option = 0;
 		break;
 	}
 	}
