@@ -34,7 +34,7 @@ enum{
 
 typedef struct{
 	I2C_TypeDef		*pI2Cx;
-	uint8_t			slaveAddres;
+	uint8_t			slaveAddress;
 	uint8_t			i2c_mode;
 	uint8_t			i2c_mainClock;
 	uint8_t			i2c_data;
@@ -47,7 +47,7 @@ void i2c_Config(I2C_Handler_t *pHandlerI2C);
 uint8_t i2c_ReadSingleRegister(I2C_Handler_t *pHandlerI2C, uint8_t regToRead);
 uint8_t i2c_ReadManyRegister(I2C_Handler_t *pHandlerI2C, uint8_t regToRead, uint8_t *bufferRxData, uint8_t numerOfBytes);
 void i2c_WriteSingleRegister(I2C_Handler_t *pHandlerI2C, uint8_t regToWrite, uint8_t newValue);
-void i2c_WriteManyRegister(I2C_Handler_t *pHandlerI2C, uint8_t regToWrite, uint8_t *bufferRxData, uint8_t numerOfBytes);
+void i2c_WriteManyRegisters(I2C_Handler_t *pHandlerI2C, uint8_t regToWrite, uint8_t *bufferRxData, uint8_t numerOfBytes);
 
 
 
