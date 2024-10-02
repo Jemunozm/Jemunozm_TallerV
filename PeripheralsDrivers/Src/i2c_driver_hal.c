@@ -220,7 +220,7 @@ void i2c_sendDataByte(I2C_Handler_t *ptrHandlerI2C, uint8_t dataToWrite){
 	ptrHandlerI2C->ptrI2Cx->DR = dataToWrite;
 
 	/* esperamos hasta que el byte sea transmitido*/
-	while(!(ptrHandlerI2C->ptrI2Cx->SR1 & I2C_SR1_BTF)){
+	while(!(ptrHandlerI2C->ptrI2Cx->SR1 & I2C_SR1_TXE)){
 		__NOP();
 	}
 }
