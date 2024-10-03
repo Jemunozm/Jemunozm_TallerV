@@ -6,6 +6,7 @@
  ******************************************************************************
  */
 #include <stdint.h>
+#include <stdlib.h>  // Para la función rand()
 #include <string.h>
 #include "stm32f4xx.h"
 #include "stdlib.h"
@@ -24,36 +25,119 @@ GPIO_Handler_t blinky = { 0 };
 Systick_Handler_t userSystick = { 0 };
 
 void initSystem(void);
+void animateRandomSquares(I2C_Handler_t *ptrHandlerI2Ctr);
+void clearScreen(I2C_Handler_t *ptrHandlerI2Ctr);
 
 int main(void) {
 
 	initSystem();
 
 	gpio_TooglePin(&blinky);
-	systick_Delay_ms(1000);
+	systick_Delay_ms(100);
 	gpio_TooglePin(&blinky);
-//	systick_Delay_ms(100);
-//	SSD1306_Init(&oled);
-//
-//	SSD1306_SendCommand(&oled, SSD1306_CMD_DISPLAY_ON);
-//	uint8_t array[26] = { 0xAE, 0x00, 0x10, 0x40, 0xB0, 0x81, 0xCF, 0xA1, 0xA6,
-//			0xA8, 0x3F, 0xC8, 0xD3, 0x00, 0xD5, 0x80, 0xD9, 0xF1, 0xDA, 0x12,
-//			0xDB, 0x20, 0x8D, 0x14, 0xAF, 0xAF };
-//	sendDataBytes(&oled, array, 26);
+
 	startOLED(&oled);
 	clearDisplay(&oled);
 
+	char page1Bytes[128] = { 0 };  // Arreglo para la página 1 (primeros 8 píxeles)
+	char page2Bytes[128] = { 0 };  // Arreglo para la página 2 (siguientes 8 píxeles)
 
-
-	toggleDisplay(&oled);
-	systick_Delay_ms(1000);
-	toggleDisplay(&oled);
-//	stopOLED(&oled);
-//	drawSinglePageMSG(&oled, "hola", 1);
-	while (1) {
-
+	// Dibujar los 3 cuadrados de 16x16 px
+	for (uint8_t i = 0; i < 16; i++) {  // 16 columnas para cada cuadrado
+	    page1Bytes[20 + i] = 0xFF;  // Cuadrado 1
+	    page1Bytes[56 + i] = 0xFF;  // Cuadrado 2
+	    page1Bytes[92 + i] = 0xFF;  // Cuadrado 3
+	    page2Bytes[20 + i] = 0xFF;  // Cuadrado 1
+	    page2Bytes[56 + i] = 0xFF;  // Cuadrado 2
+	    page2Bytes[92 + i] = 0xFF;  // Cuadrado 3
 	}
+	setPage(&oled, 3);  // Página 3 (parte superior del cuadrado)
+	setColumnAddress(&oled, 20);  // Columna de inicio (ajusta según sea necesario)
+	sendDataBytes(&oled, page1Bytes, 128);  // Enviar la primera página
+
+	setPage(&oled, 4);  // Página 4 (parte inferior del cuadrado)
+	setColumnAddress(&oled, 20);  // Columna de inicio (ajusta según sea necesario)
+	sendDataBytes(&oled, page2Bytes, 128);  // Enviar la segunda página
+
+	clearDisplay(&oled);
+	animateRandomSquares(&oled);
 }
+
+
+#include <stdlib.h>  // Para la función rand()
+
+void animateRandomSquares(I2C_Handler_t *ptrHandlerI2Ctr) {
+    char pageBytes[128] = { 0 };  // Arreglo para una página (128 columnas)
+    uint8_t startPage = 0;        // Página inicial
+    uint8_t endPage = 7;          // Página final
+
+    // Posiciones fijas de los cuadrados (16 columnas cada uno)
+    uint8_t pos1 = 32;  // Posición fija del cuadrado 1 (centrado en el medio)
+    uint8_t pos2 = pos1 + 24;  // Posición fija del cuadrado 2
+    uint8_t pos3 = pos2 + 24;  // Posición fija del cuadrado 3
+
+    while (1) {  // Bucle infinito para la animación
+        // Mover los cuadrados desde la página 0 a la página 7
+        for (uint8_t page = startPage; page <= endPage; page++) {
+            // Borrar la pantalla antes de redibujar
+            clearScreen(ptrHandlerI2Ctr);
+
+            // Decisiones aleatorias para cada cuadrado
+            int draw1 = rand() % 2;  // 0 o 1, si se dibuja o no el cuadrado 1
+            int draw2 = rand() % 2;  // 0 o 1, si se dibuja o no el cuadrado 2
+            int draw3 = rand() % 2;  // 0 o 1, si se dibuja o no el cuadrado 3
+
+            // Dibujar los cuadrados si se ha decidido pintarlos
+            if (draw1) {
+                for (uint8_t i = 0; i < 16; i++) {  // 16 columnas por cada cuadrado
+                    pageBytes[pos1 + i] = 0xFF;  // Cuadrado 1
+                }
+            }
+
+            if (draw2) {
+                for (uint8_t i = 0; i < 16; i++) {  // 16 columnas por cada cuadrado
+                    pageBytes[pos2 + i] = 0xFF;  // Cuadrado 2
+                }
+            }
+
+            if (draw3) {
+                for (uint8_t i = 0; i < 16; i++) {  // 16 columnas por cada cuadrado
+                    pageBytes[pos3 + i] = 0xFF;  // Cuadrado 3
+                }
+            }
+
+            // Enviar los datos de la página actual
+            setPage(ptrHandlerI2Ctr, page);
+            setColumnAddress(ptrHandlerI2Ctr, 0);  // Columna de inicio (ajústalo si es necesario)
+            sendDataBytes(ptrHandlerI2Ctr, pageBytes, 128);
+
+            // Pausa para crear el efecto de animación
+            systick_Delay_ms(200);  // Ajusta el valor para hacer la animación más rápida o más lenta
+
+            // Borrar la página actual (apagamos los píxeles) para la próxima iteración
+            memset(pageBytes, 0, sizeof(pageBytes));
+        }
+
+        // Borrar completamente la pantalla después de llegar a la página 7
+        clearScreen(ptrHandlerI2Ctr);
+
+        // Pequeña pausa antes de repetir la animación con nuevas decisiones aleatorias
+        systick_Delay_ms(500);  // Pausa entre ciclos de animación
+    }
+}
+
+
+void clearScreen(I2C_Handler_t *ptrHandlerI2Ctr) {
+    char emptyPage[128] = { 0 };  // Página vacía (todos los píxeles apagados)
+
+    // Borrar todas las páginas de la pantalla
+    for (uint8_t page = 0; page < 8; page++) {
+        setPage(ptrHandlerI2Ctr, page);
+        setColumnAddress(ptrHandlerI2Ctr, 0);  // Comenzar desde la primera columna
+        sendDataBytes(ptrHandlerI2Ctr, emptyPage, 128);  // Enviar una página vacía
+    }
+}
+
 void initSystem(void) {
 //
 //	SCB->CPACR |= (0xF<<20);
@@ -103,6 +187,10 @@ void initSystem(void) {
 	systick_Config(&userSystick);
 
 }
+
+
+
+
 
 void assert_failed(uint8_t *file, uint32_t line) {
 	while (1) {
