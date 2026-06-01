@@ -23,7 +23,7 @@ void tft_bus_write_command8(uint8_t cmd)
 	CS_GPIO_Port->BSRR = (uint32_t)CS_Pin << 16;
 	RS_GPIO_Port->BSRR = (uint32_t)RS_Pin << 16;
 
-	DB0_GPIO_Port->BSRR = ((uint32_t)(uint8_t)(~cmd) << 16) | cmd;
+	DB0_GPIO_Port->BSRR = ((uint32_t)(uint8_t)(~cmd) << 16U) | cmd;
 
 	WR_GPIO_Port->BSRR = (uint32_t)WR_Pin << 16;
 	WR_GPIO_Port->BSRR = WR_Pin;
@@ -38,7 +38,7 @@ void tft_bus_write_data8(uint8_t data)
 	CS_GPIO_Port->BSRR = (uint32_t)CS_Pin << 16;
 	RS_GPIO_Port->BSRR = RS_Pin;
 
-	DB0_GPIO_Port->BSRR = ((uint32_t)(uint8_t)(~data) << 16) | data;
+	DB0_GPIO_Port->BSRR = ((uint32_t)(uint8_t)(~data) << 16U) | data;
 
 	WR_GPIO_Port->BSRR = (uint32_t)WR_Pin << 16;
 	WR_GPIO_Port->BSRR = WR_Pin;
@@ -51,15 +51,52 @@ void tft_bus_write_data16(uint16_t data)
 	uint8_t low_byte = (uint8_t)(data & 0xFFU);
 	uint8_t high_byte = (uint8_t)(data >> 8);
 
-	/* Bus de 16 bits: byte bajo en GPIOC y byte alto en GPIOB. */
+	/* Bus de 16 bits: byte bajo en GPIOC (PC0..PC7) y byte alto en GPIOA (PA4..PA11). */
 	CS_GPIO_Port->BSRR = (uint32_t)CS_Pin << 16;
 	RS_GPIO_Port->BSRR = RS_Pin;
 
-	DB0_GPIO_Port->BSRR = ((uint32_t)(uint8_t)(~low_byte) << 16) | low_byte;
-	DB8_GPIO_Port->BSRR = ((uint32_t)(uint8_t)(~high_byte) << 24) | ((uint32_t)high_byte << 8);
+	DB0_GPIO_Port->BSRR = ((uint32_t)(uint8_t)(~low_byte) << 16U) | low_byte;
+	GPIOA->BSRR = ((uint32_t)high_byte << 4U) | ((uint32_t)(uint8_t)(~high_byte) << 20U);
 
 	WR_GPIO_Port->BSRR = (uint32_t)WR_Pin << 16;
 	WR_GPIO_Port->BSRR = WR_Pin;
+
+	CS_GPIO_Port->BSRR = CS_Pin;
+}
+
+void tft_bus_write_data16_repeat(uint16_t data, uint32_t count)
+{
+	uint8_t low_byte = (uint8_t)(data & 0xFFU);
+	uint8_t high_byte = (uint8_t)(data >> 8);
+	uint32_t low_bsrr = ((uint32_t)(uint8_t)(~low_byte) << 16U) | low_byte;
+	uint32_t high_bsrr = ((uint32_t)high_byte << 4U) | ((uint32_t)(uint8_t)(~high_byte) << 20U);
+
+	CS_GPIO_Port->BSRR = (uint32_t)CS_Pin << 16U;
+	RS_GPIO_Port->BSRR = RS_Pin;
+
+	while (count >= 8U)
+	{
+		GPIOC->BSRR = low_bsrr; GPIOA->BSRR = high_bsrr; WR_GPIO_Port->BSRR = (uint32_t)WR_Pin << 16U; WR_GPIO_Port->BSRR = WR_Pin;
+		GPIOC->BSRR = low_bsrr; GPIOA->BSRR = high_bsrr; WR_GPIO_Port->BSRR = (uint32_t)WR_Pin << 16U; WR_GPIO_Port->BSRR = WR_Pin;
+		GPIOC->BSRR = low_bsrr; GPIOA->BSRR = high_bsrr; WR_GPIO_Port->BSRR = (uint32_t)WR_Pin << 16U; WR_GPIO_Port->BSRR = WR_Pin;
+		GPIOC->BSRR = low_bsrr; GPIOA->BSRR = high_bsrr; WR_GPIO_Port->BSRR = (uint32_t)WR_Pin << 16U; WR_GPIO_Port->BSRR = WR_Pin;
+		GPIOC->BSRR = low_bsrr; GPIOA->BSRR = high_bsrr; WR_GPIO_Port->BSRR = (uint32_t)WR_Pin << 16U; WR_GPIO_Port->BSRR = WR_Pin;
+		GPIOC->BSRR = low_bsrr; GPIOA->BSRR = high_bsrr; WR_GPIO_Port->BSRR = (uint32_t)WR_Pin << 16U; WR_GPIO_Port->BSRR = WR_Pin;
+		GPIOC->BSRR = low_bsrr; GPIOA->BSRR = high_bsrr; WR_GPIO_Port->BSRR = (uint32_t)WR_Pin << 16U; WR_GPIO_Port->BSRR = WR_Pin;
+		GPIOC->BSRR = low_bsrr; GPIOA->BSRR = high_bsrr; WR_GPIO_Port->BSRR = (uint32_t)WR_Pin << 16U; WR_GPIO_Port->BSRR = WR_Pin;
+		count -= 8U;
+	}
+
+	while (count > 0U)
+	{
+		GPIOC->BSRR = low_bsrr;
+		GPIOA->BSRR = high_bsrr;
+
+		WR_GPIO_Port->BSRR = (uint32_t)WR_Pin << 16U;
+		WR_GPIO_Port->BSRR = WR_Pin;
+
+		count--;
+	}
 
 	CS_GPIO_Port->BSRR = CS_Pin;
 }

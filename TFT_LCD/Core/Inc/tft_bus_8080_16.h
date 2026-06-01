@@ -41,6 +41,15 @@ void tft_bus_write_data8(uint8_t data);
 void tft_bus_write_data16(uint16_t data);
 
 /**
+  * @brief  Escribe repetidamente un dato de 16 bits sin reprogramar la ventana.
+  * @note    Esta ruta esta pensada para relleno de pantalla y transferencias largas.
+  * @param  data  Color/dato de 16 bits a repetir.
+  * @param  count Numero de pixeles o palabras a transmitir.
+  * @retval None
+  */
+void tft_bus_write_data16_repeat(uint16_t data, uint32_t count);
+
+/**
   * @brief  Genera la secuencia de reset a nivel de hardware sobre el TFT.
   * @note    La temporizacion de la secuencia debe ser controlada por la capa superior.
   * @retval None
